@@ -4,7 +4,7 @@ Application web privée prévue sur `https://pilotage.bmlab.fr` : tout ce que le
 
 **Projet « chapeau », totalement séparé** des autres projets : site de l'appartement (`C:\Dev\site-accueil-appartement`, psv.bmlab.fr), jeu Immatriculation (`C:\Dev\immatriculation`), Courses (`C:\Dev\courses`). Son propre dépôt, sa propre PocketBase (service `pocketbase-pilotage`, port 8095, `/opt/pocketbase-pilotage`), son propre dossier web (`/var/www/pilotage-bmlab`), son propre bloc Caddy (`/etc/caddy/pilotage.caddy`). Il peut *lire* la documentation des autres projets pour en tirer les tâches, mais ne modifie jamais leurs fichiers ni leurs bases.
 
-`docs/CDC.md` est la **source de vérité vivante** (historique des versions en tête). État au 23/10/2026 : version 0.1, proposition soumise au propriétaire, **rien n'est construit** ; attendre sa validation avant d'écrire du code.
+`docs/CDC.md` est la **source de vérité vivante** (historique des versions en tête). État au 23/10/2026 : version 0.3, **validée par le propriétaire** ; étape 1 (chapitre 10) en cours.
 
 ## Conventions (communes aux projets du propriétaire)
 - Parler au propriétaire **en français** (il n'est pas à l'aise en anglais). Textes et commentaires en français.

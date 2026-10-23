@@ -1,8 +1,9 @@
 # Cahier des charges — Pilotage (échéances et entretien, tous domaines)
 
-Version 0.2 — 23/10/2026 · Proposition révisée avec les réponses du propriétaire, rien n'est construit
+Version 0.3 — 23/10/2026 · **Validée par le propriétaire** (version 0.2 validée le 23/10/2026) ; étape 1 en cours
 
 **Historique des versions**
+- Version 0.3 (23/10/2026) : **version 0.2 validée par le propriétaire** ; l'étape 1 peut commencer. Réponses complémentaires : roues hiver du Tiguan pas encore posées, chaînes de l'Eos pas encore dans le coffre (les deux avant le 01/11/2026) ; rien n'est anticipé pour le ramonage, la piscine ni le paysagiste en 2026 (préparations à faire immédiatement) ; **pompe à chaleur** (pas de chaudière), déjà en route pour l'hiver 2026-2027 : **entretien obligatoire tous les 2 ans** pour une pompe à chaleur de 4 à 70 kW (décret 2020-912), et non chaque année comme écrit en 0.2 ; date du dernier entretien à compléter ; **sel de l'adoucisseur à vérifier tous les 3 mois**, entre deux nettoyages ; tolérances validées (± 15 j pour la maison, ± 7 j par défaut) ; alerte de gel annoncé gardée pour l'étape 2 ; abonnement du calendrier gardé en étape 3. Sécurité : sans objet (contenu seulement).
 - Version 0.2 (23/10/2026) : **réponses du propriétaire aux questions du chapitre 11**. Véhicules : la VW Eos d'Agnès (dernier contrôle technique noté au 15/05/2025, date exacte à confirmer, donc le prochain avant le 15/05/2027 ; chaînes à mettre dans le coffre avant le 1er novembre et à retirer en avril) et le Tiguan de Bruno (acheté en décembre 2023, premier contrôle technique en décembre 2027 ; deux jeux de roues, été et hiver). Maison : adoucisseur nettoyé le 03/10/2026, tous les 6 mois ; pergola neuve jamais graissée, premier graissage vers la mi-novembre 2026, puis chaque fin octobre ou début novembre ; ramonage vers septembre, avant le premier feu. Toutes les suggestions des tableaux 9.3 à 9.5 sont gardées. Nouvelles tâches : entretien du robot tondeuse en novembre, passage du paysagiste en novembre (à réserver 2 mois avant), hivernage de la piscine vers novembre (eau autour de 12 °C, avant les premières gelées). **Nouveau principe demandé par le propriétaire : dates souples et dates impératives** (4.2), avec une tolérance en jours ; ajout aussi de la **préparation à l'avance** (4.3), de la **condition de déclenchement** (4.4) et de la liste **« À compléter »** pour les tâches sans date connue (3.1). **Abonnement du calendrier sur iPhone et iPad confirmé** par le propriétaire (3.5). **Jeton Infomaniak réglé le 23/10/2026, guidé pas à pas** : vérifié que Caddy ne s'en servait plus (aucun bloc `dns infomaniak` actif depuis le secours) ; seul jeton du compte (`caddy-psv-bmlab-dns01`, créé le 10/09/2026, dernière utilisation le 20/10) supprimé dans le Manager Infomaniak ; `/etc/systemd/system/caddy.service.d/override.conf` réécrit sans le jeton et avec `ExecStart` sans `--environ` ; Caddy redémarré, actif, psv, immat et la vitrine répondent en IPv4 et en IPv6. Le futur jeton ira dans un fichier lisible par root seulement (`EnvironmentFile`), pas dans le fichier de service. Dépôt GitHub privé `pilotage` accepté. Sécurité : aucune nouvelle surface hors calendrier abonné (déjà prévu au chapitre 8 : adresse à jeton révocable, titre et date seulement). Les données ajoutées (noms d'usage des véhicules, prénoms du foyer) sont personnelles mais peu sensibles ; aucune immatriculation ni aucun numéro de document dans le dépôt. Jeton exposé supprimé, `--environ` retiré.
 - Version 0.1 (23/10/2026) : **première proposition**, à la demande du propriétaire après l'incident Caddy du 23/10 (PSV, CDC v3.73) : « un planning de tout ce que je dois faire, avec les dates, les actions pas à pas, sous forme de calendrier, avec des rappels par mail dès qu'une échéance approche, le jour même, et en alerte si les dates sont dépassées ». Périmètre **global** décidé par le propriétaire : informatique (tous les projets, présents et à venir), mais aussi maison, voitures, appartement, administratif. Décisions déjà prises : surveillance externe des sites et du système de rappels (challenge 1) ; contrôles et actions automatiques **avec un compte rendu en clair** à chaque automatisme (challenge 2) ; tâches « en attente » avec date de relance (challenge 3) ; un seul e-mail par jour, trois priorités (challenge 4) ; e-mails au **même destinataire que le rapport de sauvegarde du PC**. Sécurité : nouvelle application privée sur le serveur commun ; voir chapitre 8.
 
@@ -225,15 +226,15 @@ Les adresses de ces services ne reçoivent aucune donnée personnelle : seulemen
 |---|---|---|---|---|
 | Nettoyer l'adoucisseur d'eau (dernier : 03/10/2026) | 6 mois après le dernier | vers le 03/04/2027 | ± 15 j | 🟠 |
 | Graisser les lames de la pergola bioclimatique (neuve, jamais graissée) | chaque année, fin octobre ou début novembre | vers le 15/11/2026, puis vers le 01/11 | ± 15 j | 🟠 |
-| Ramonage de la cheminée (garder le certificat : demandé par l'assurance) | chaque année, vers septembre, avant le premier feu (souvent en novembre) | **à confirmer** : fait en 2026 ? Sinon avant le premier feu, vers le 15/11/2026 ; ensuite vers le 15/09 | ± 15 j ; préparation : réserver le ramoneur 30 j avant | 🔴 obligation |
-| Recharger le sel de l'adoucisseur | **à préciser** | à compléter | ± 7 j | ⚪ |
-| Entretien de la chaudière ou de la pompe à chaleur (obligatoire chaque année) | annuelle | **à préciser** : quel appareil, date du dernier entretien | 🔒 impérative | 🔴 |
+| Ramonage de la cheminée (garder le certificat : demandé par l'assurance) | chaque année, vers septembre, avant le premier feu (souvent en novembre) | 2026 pas encore fait : avant le premier feu, vers le 15/11/2026 (**réserver le ramoneur tout de suite**) ; ensuite vers le 15/09 | ± 15 j ; préparation : réserver le ramoneur 30 j avant | 🔴 obligation |
+| Vérifier et recharger le sel de l'adoucisseur | tous les 3 mois (une fois entre deux nettoyages, et au nettoyage) | vers le 03/01/2027 | ± 15 j | ⚪ |
+| Entretien de la pompe à chaleur (obligatoire tous les 2 ans, attestation à garder) | tous les 2 ans après le dernier | à compléter (date de la dernière attestation du chauffagiste) | 🔒 impérative ; préparation : prendre rendez-vous 30 j avant | 🔴 obligation |
 | Tester les détecteurs de fumée, changer les piles | 6 mois | vers le 01/12/2026 | ± 15 j | 🟠 |
 | Nettoyer les bouches et filtres de la VMC | 6 mois | vers le 01/12/2026 | ± 15 j | ⚪ |
 | Nettoyer les gouttières (après la chute des feuilles) | chaque automne | vers le 30/11/2026 | ± 15 j | ⚪ |
 | Apporter le robot tondeuse à l'entretien (après la dernière tonte) | chaque année, novembre | vers le 15/11/2026 | ± 15 j | ⚪ |
-| Passage du paysagiste | chaque année, novembre | vers le 15/11/2026 ; **2026 : à réserver dès maintenant, si ce n'est pas déjà fait** | ± 15 j ; préparation : appeler le paysagiste 60 j avant | 🟠 |
-| Hiverner la piscine | chaque année, vers novembre | vers le 15/11/2026, **à confirmer si déjà fait** | condition : eau autour de 12 °C, avant les premières gelées (4.4) | 🟠 |
+| Passage du paysagiste | chaque année, novembre | vers le 15/11/2026 ; **2026 : pas encore réservé, appeler tout de suite** | ± 15 j ; préparation : appeler le paysagiste 60 j avant | 🟠 |
+| Hiverner la piscine | chaque année, vers novembre | vers le 15/11/2026 (2026 pas encore fait : surveiller la température de l'eau dès maintenant) | condition : eau autour de 12 °C, avant les premières gelées (4.4) | 🟠 |
 
 ### 9.4 Voitures (réponses du 23/10/2026 ; toutes les suggestions sont gardées)
 **VW Eos d'Agnès**
@@ -241,7 +242,7 @@ Les adresses de ces services ne reçoivent aucune donnée personnelle : seulemen
 | Tâche | Fréquence | Prochaine | Souplesse | Priorité |
 |---|---|---|---|---|
 | Contrôle technique (dernier noté au 15/05/2025, date exacte à confirmer sur le procès-verbal) | tous les 2 ans | avant le 15/05/2027 | 🔒 impérative ; préparation : prendre rendez-vous 30 j avant | 🔴 obligation |
-| Mettre les chaînes dans le coffre (loi Montagne) | chaque année | avant le 01/11 (2026 : **dans 9 jours**) | 🔒 impérative | 🔴 |
+| Mettre les chaînes dans le coffre (loi Montagne) | chaque année | avant le 01/11 (2026 : **pas encore fait, dans 9 jours**) | 🔒 impérative | 🔴 |
 | Retirer les chaînes du coffre (fin de l'obligation le 31 mars) | chaque année, avril | vers le 15/04/2027 | ± 15 j | ⚪ |
 | Entretien constructeur (vidange…) | selon le carnet | à compléter | ± 30 j | 🟠 |
 | Échéance de l'assurance | annuelle | à compléter | 🔒 impérative | 🟠 |
@@ -251,7 +252,7 @@ Les adresses de ces services ne reçoivent aucune donnée personnelle : seulemen
 | Tâche | Fréquence | Prochaine | Souplesse | Priorité |
 |---|---|---|---|---|
 | Premier contrôle technique (4 ans après la première mise en circulation, date exacte en case B de la carte grise) | puis tous les 2 ans | avant décembre 2027, jour à confirmer | 🔒 impérative ; préparation : prendre rendez-vous 30 j avant | 🔴 obligation |
-| Poser les roues hiver (loi Montagne) | chaque année | avant le 01/11 (2026 : **dans 9 jours**, à confirmer si déjà fait) | 🔒 impérative ; préparation : rendez-vous au garage 21 j avant | 🔴 |
+| Poser les roues hiver (loi Montagne) | chaque année | avant le 01/11 (2026 : **pas encore fait, dans 9 jours : rendez-vous au garage tout de suite**) | 🔒 impérative ; préparation : rendez-vous au garage 21 j avant | 🔴 |
 | Reposer les roues été (fin de l'obligation le 31 mars) | chaque année, avril | vers le 15/04/2027 | ± 15 j | ⚪ |
 | Entretien constructeur (vidange…) | selon le carnet | à compléter | ± 30 j | 🟠 |
 | Échéance de l'assurance | annuelle | à compléter | 🔒 impérative | 🟠 |
@@ -273,20 +274,16 @@ Les voitures sont désignées par un nom d'usage. L'immatriculation pourra être
 
 | Étape | Contenu | État |
 |---|---|---|
-| 1 | Base de données, connexion, accueil, calendrier, fiches, procédures avec photos et vidéos, « Fait » / « Reporter » / « En attente », justificatifs, e-mail de 7 h et résumé du lundi, inventaire du chapitre 9 chargé, sauvegarde | à faire après validation |
-| 2 | Contrôles et actions automatiques de la nuit avec comptes rendus en clair, surveillance externe (UptimeRobot, Healthchecks.io) | à faire |
+| 1 | Base de données, connexion, accueil, calendrier, fiches, procédures avec photos et vidéos, « Fait » / « Reporter » / « En attente », justificatifs, dates souples ou impératives, préparations, liste « À compléter », e-mail de 7 h et résumé du lundi, inventaire du chapitre 9 chargé, sauvegarde | **en cours** (CDC 0.2 validé le 23/10/2026) |
+| 2 | Contrôles et actions automatiques de la nuit avec comptes rendus en clair, surveillance externe (UptimeRobot, Healthchecks.io), alerte de gel annoncé | à faire |
 | 3 | Abonnement du calendrier dans l'agenda de l'iPhone et de l'iPad (3.5, souhait confirmé), rapport de la sauvegarde du PC transmis au Pilotage | à faire (l'abonnement peut être avancé en étape 1 si le propriétaire le souhaite) |
 
 ## 11. Questions ouvertes
 
 1. ~~Date de fin du nom de domaine bmlab.fr~~ : 10/09/2027 (réponse du 23/10/2026).
-2. ~~Véhicules et dates de la maison~~ : réponses du 23/10/2026 (version 0.2). Restent à préciser :
-   - date exacte du dernier contrôle technique de l'Eos ; date de première mise en circulation du Tiguan ;
-   - ramonage, piscine, roues hiver du Tiguan, chaînes de l'Eos, paysagiste : déjà faits ou réservés pour 2026 ?
-   - fréquence de recharge du sel de l'adoucisseur ;
-   - chaudière ou pompe à chaleur : quel appareil, et date du dernier entretien.
-3. ~~Suggestions des tableaux 9.3 à 9.5~~ : toutes gardées (23/10/2026). Les dates inconnues (assurances, entretien constructeur, papiers, abonnements…) seront saisies dans l'application, grâce à la liste « À compléter ».
+2. ~~Véhicules et dates de la maison~~ : réponses du 23/10/2026 (versions 0.2 et 0.3). Restent à saisir dans l'application (liste « À compléter ») : date exacte du dernier contrôle technique de l'Eos, date de première mise en circulation du Tiguan, date du dernier entretien de la pompe à chaleur, dates des assurances, de l'entretien constructeur, des papiers et des abonnements.
+3. ~~Suggestions des tableaux 9.3 à 9.5~~ : toutes gardées (23/10/2026).
 4. Comptes UptimeRobot et Healthchecks.io : à créer par le propriétaire au moment de l'étape 2.
-5. Alerte de gel annoncé (4.4) avec Open-Meteo : à garder pour l'étape 2 ?
-6. Tolérances proposées (± 15 jours pour la maison, ± 7 jours par défaut) : à valider.
-7. Abonnement du calendrier sur iPhone et iPad (3.5) : en étape 3 comme prévu, ou avancé en étape 1 ?
+5. ~~Alerte de gel annoncé~~ : gardée pour l'étape 2 (23/10/2026) ; commune saisie dans les réglages, jamais dans le dépôt.
+6. ~~Tolérances~~ : validées (23/10/2026).
+7. ~~Abonnement du calendrier~~ : reste en étape 3 (23/10/2026).
