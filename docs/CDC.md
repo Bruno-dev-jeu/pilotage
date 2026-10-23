@@ -1,8 +1,9 @@
 # Cahier des charges — Pilotage (échéances et entretien, tous domaines)
 
-Version 0.1 — 23/10/2026 · Proposition soumise au propriétaire, rien n'est construit
+Version 0.2 — 23/10/2026 · Proposition révisée avec les réponses du propriétaire, rien n'est construit
 
 **Historique des versions**
+- Version 0.2 (23/10/2026) : **réponses du propriétaire aux questions du chapitre 11**. Véhicules : la VW Eos d'Agnès (dernier contrôle technique noté au 15/05/2025, date exacte à confirmer, donc le prochain avant le 15/05/2027 ; chaînes à mettre dans le coffre avant le 1er novembre et à retirer en avril) et le Tiguan de Bruno (acheté en décembre 2023, premier contrôle technique en décembre 2027 ; deux jeux de roues, été et hiver). Maison : adoucisseur nettoyé le 03/10/2026, tous les 6 mois ; pergola neuve jamais graissée, premier graissage vers la mi-novembre 2026, puis chaque fin octobre ou début novembre ; ramonage vers septembre, avant le premier feu. Toutes les suggestions des tableaux 9.3 à 9.5 sont gardées. Nouvelles tâches : entretien du robot tondeuse en novembre, passage du paysagiste en novembre (à réserver 2 mois avant), hivernage de la piscine vers novembre (eau autour de 12 °C, avant les premières gelées). **Nouveau principe demandé par le propriétaire : dates souples et dates impératives** (4.2), avec une tolérance en jours ; ajout aussi de la **préparation à l'avance** (4.3), de la **condition de déclenchement** (4.4) et de la liste **« À compléter »** pour les tâches sans date connue (3.1). **Abonnement du calendrier sur iPhone et iPad confirmé** par le propriétaire (3.5). Jeton Infomaniak : pas encore remplacé ; constat que Caddy ne s'en sert plus depuis le secours du 23/10, il peut donc être supprimé chez Infomaniak tout de suite sans couper les sites. Dépôt GitHub privé `pilotage` accepté. Sécurité : aucune nouvelle surface hors calendrier abonné (déjà prévu au chapitre 8 : adresse à jeton révocable, titre et date seulement). Les données ajoutées (noms d'usage des véhicules, prénoms du foyer) sont personnelles mais peu sensibles ; aucune immatriculation ni aucun numéro de document dans le dépôt. Suppression immédiate du jeton Infomaniak exposé recommandée.
 - Version 0.1 (23/10/2026) : **première proposition**, à la demande du propriétaire après l'incident Caddy du 23/10 (PSV, CDC v3.73) : « un planning de tout ce que je dois faire, avec les dates, les actions pas à pas, sous forme de calendrier, avec des rappels par mail dès qu'une échéance approche, le jour même, et en alerte si les dates sont dépassées ». Périmètre **global** décidé par le propriétaire : informatique (tous les projets, présents et à venir), mais aussi maison, voitures, appartement, administratif. Décisions déjà prises : surveillance externe des sites et du système de rappels (challenge 1) ; contrôles et actions automatiques **avec un compte rendu en clair** à chaque automatisme (challenge 2) ; tâches « en attente » avec date de relance (challenge 3) ; un seul e-mail par jour, trois priorités (challenge 4) ; e-mails au **même destinataire que le rapport de sauvegarde du PC**. Sécurité : nouvelle application privée sur le serveur commun ; voir chapitre 8.
 
 ---
@@ -39,6 +40,7 @@ Trois qualités attendues :
 - La liste des tâches dans cet ordre, avec domaine, échéance (« dans 3 jours », « en retard de 5 jours ») et priorité.
 - Le dernier compte rendu des contrôles automatiques (chapitre 5), résumé en une ligne : « Cette nuit : 14 contrôles, tout va bien » ou « Cette nuit : 1 point à regarder ».
 - Filtre par domaine.
+- **« À compléter »** : les tâches dont la date n'est pas encore connue (par exemple l'échéance d'une assurance) sont chargées sans date et rangées dans cette liste. Elles n'envoient aucun rappel, mais le résumé du lundi les rappelle en une ligne (« 9 tâches attendent une date »), jusqu'à ce que le propriétaire les ait toutes datées.
 
 ### 3.2 Calendrier
 - Vue mois (défaut) et vue liste sur 12 mois.
@@ -54,7 +56,7 @@ Trois qualités attendues :
 - Boutons :
   - **« Fait »** : demande la date (aujourd'hui par défaut), une remarque, des justificatifs facultatifs, puis calcule et affiche la prochaine échéance.
   - **« Reporter »** : nouvelle date et raison obligatoire (la raison reste dans l'historique ; un report n'efface jamais un retard en silence).
-  - **« En attente de… »** : pour une tâche qui dépend de quelqu'un (voir 4.3).
+  - **« En attente de… »** : pour une tâche qui dépend de quelqu'un (voir 4.6).
 
 ### 3.4 Éditeur de procédure
 Le propriétaire remplit lui-même ses procédures (adoucisseur, pergola…) depuis son téléphone :
@@ -64,6 +66,13 @@ Le propriétaire remplit lui-même ses procédures (adoucisseur, pergola…) dep
 - une procédure peut être dupliquée (ex. deux voitures).
 
 Les procédures informatiques sont écrites par Claude, dans le même format, et tenues à jour quand une commande change.
+
+### 3.5 Calendrier sur l'iPhone et l'iPad (souhait confirmé le 23/10/2026)
+- Un bouton « S'abonner dans l'agenda » ouvre l'abonnement dans Calendrier d'iOS : une seule fois sur l'iPhone, une fois sur l'iPad. Ensuite, les tâches s'y ajoutent et s'y mettent à jour toutes seules ; l'agenda les relit quelques fois par jour.
+- Chaque tâche y apparaît comme un événement d'une journée, à sa date (tâche souple : la date visée), avec sa pastille de priorité dans le titre (« 🔴 Contrôle technique Eos ») et un lien vers sa fiche. Les préparations (4.3) y figurent aussi.
+- Une tâche faite ou reportée est mise à jour dans l'agenda au passage suivant. Le calendrier abonné est en lecture seule : on coche « Fait » dans le Pilotage, pas dans l'agenda.
+- Les rappels restent assurés par l'e-mail de 7 h. iOS ignore souvent les alarmes des calendriers abonnés ; si le propriétaire veut une alerte sur le téléphone, il peut l'activer pour ce calendrier dans les réglages de Calendrier.
+- Sécurité : voir chapitre 8 (adresse à jeton secret, révocable ; titre et date seulement).
 
 ## 4. Les tâches
 
@@ -77,14 +86,34 @@ Les procédures informatiques sont écrites par Claude, dans le même format, et
 
 Chaque tâche peut avoir une **fenêtre de saison** (ex. ramonage entre septembre et octobre, avant la saison de chauffe).
 
-### 4.2 Priorités et rappels
+### 4.2 Dates souples et dates impératives
+Demande du propriétaire (version 0.2) : « on n'est pas à un jour ou une semaine près » pour graisser la pergola, mais un contrôle technique est **obligatoire** à sa date. Chaque tâche porte donc une **souplesse** :
+
+| Souplesse | Exemples | Affichage | En retard à partir de |
+|---|---|---|---|
+| **Impérative** 🔒 | contrôle technique, chaînes ou pneus hiver avant le 1er novembre, assurance, impôts, nom de domaine | « avant le 15/05/2027 » | le lendemain de la date |
+| **Souple, ± N jours** | pergola (± 15 j), adoucisseur (± 15 j), robot tondeuse (± 15 j) | « vers le 15/11 (± 15 j) » | date + N jours |
+
+- Une tâche souple apparaît dans « à faire » dès *date − N jours*, sans insister. Elle ne passe « en retard » qu'après *date + N jours*.
+- Une tâche impérative peut être reportée (bouton « Reporter »), mais **la date limite légale ou contractuelle reste affichée** en rouge à côté de la nouvelle date. Ainsi, un report ne cache jamais une obligation.
+- Par défaut, toute tâche 🔴 liée à une obligation est impérative. Les autres sont souples, avec ± 7 jours. Le propriétaire peut changer ce réglage dans la fiche.
+
+### 4.3 Préparation à l'avance
+Certaines tâches demandent d'agir bien avant la date : réserver le paysagiste 2 mois avant son passage, prendre rendez-vous pour le contrôle technique ou le ramonage. Une tâche peut porter une **préparation** : un texte (« appeler le paysagiste pour fixer la date ») et un délai (60 jours). À *date − délai*, la préparation apparaît comme une tâche à part, rattachée à la tâche principale. Une fois cochée, elle disparaît.
+
+### 4.4 Condition de déclenchement
+Certaines tâches dépendent d'une observation plutôt que du calendrier : hiverner la piscine quand l'eau est autour de 12 °C, avant les premières gelées. La fiche porte alors une **condition** en clair, affichée en tête et dans l'e-mail, en plus de la fenêtre de saison (novembre). Idée pour l'étape 2, à confirmer : prévenir quand le gel est annoncé à la maison dans les 7 jours, avec Open-Meteo (déjà utilisé par le site PSV, sans compte) et seulement le nom de la commune.
+
+### 4.5 Priorités et rappels
 | Priorité | Pour | Premier rappel | Le jour J | En retard |
 |---|---|---|---|---|
 | 🔴 **Critique** | sécurité, panne, obligation légale | J-7 (J-30 si annuelle) | oui | **chaque jour**, en tête de l'e-mail |
 | 🟠 **Important** | entretien, sauvegardes, conformité | J-7 (J-30 si annuelle) | oui | tous les 3 jours |
 | ⚪ **Confort** | le reste | dans le résumé du lundi | dans le résumé du lundi | dans le résumé du lundi |
 
-### 4.3 Tâches « en attente »
+Pour une tâche souple, « le jour J » est le début de la tolérance (*date − N jours*) et « en retard » commence à *date + N jours* (4.2).
+
+### 4.6 Tâches « en attente »
 Une tâche peut attendre une réponse ou un événement extérieur. Elle porte :
 - **ce qu'on attend et de qui** (ex. « réponse du Département, demande 85-5448 ») ;
 - **une date de relance** : à cette date, rappel « relancer ou décider » ;
@@ -162,7 +191,8 @@ Les adresses de ces services ne reçoivent aucune donnée personnelle : seulemen
 ### 9.1 Informatique
 | Tâche | Fréquence | Prochaine | Priorité | Domaine |
 |---|---|---|---|---|
-| Remplacer le jeton d'API Infomaniak (exposé le 23/10) | une fois | **en retard dès demain** | 🔴 | Serveur |
+| Supprimer chez Infomaniak le jeton d'API exposé le 23/10 (Caddy ne s'en sert plus depuis le secours : aucune coupure) | une fois | **immédiatement** | 🔴 | Serveur |
+| Créer un nouveau jeton et le ranger sur le serveur | une fois | avec le retour du module Infomaniak | 🔴 | Serveur |
 | Retirer `--environ` du service Caddy | une fois | avec le jeton | 🔴 | Serveur |
 | Remettre le module Infomaniak dans Caddy et les fichiers `.avant-secours` | en attente du service caddyserver.com, relance chaque 3 jours | 26/10 | 🟠 | Serveur |
 | Mises à jour du système (hors sécurité, hors Caddy) | mensuelle, le 1er | 01/11 | 🟠 | Serveur |
@@ -190,27 +220,45 @@ Les adresses de ces services ne reçoivent aucune donnée personnelle : seulemen
 | Informations datées de l'été | annuelle | 15/05/2027 | 🟠 |
 | Étape 5 de Courses (abandon du classeur Excel) | en attente | 15/12 | ⚪ |
 
-### 9.3 Maison (cités par le propriétaire, et suggestions à confirmer)
-| Tâche | Fréquence | Priorité | Origine |
-|---|---|---|---|
-| Nettoyer l'adoucisseur d'eau | 6 mois après le dernier | 🟠 | propriétaire |
-| Graisser les lames de la pergola bioclimatique | annuelle | 🟠 | propriétaire |
-| Ramonage de la cheminée (garder le certificat : demandé par l'assurance) | annuelle, avant la saison de chauffe | 🔴 obligation | propriétaire |
-| Recharger le sel de l'adoucisseur | à préciser | ⚪ | suggestion |
-| Entretien de la chaudière ou de la pompe à chaleur (obligatoire chaque année) | annuelle | 🔴 | suggestion, si concerné |
-| Tester les détecteurs de fumée, changer les piles | 6 mois | 🟠 | suggestion |
-| Nettoyer les bouches et filtres de la VMC | 6 mois | ⚪ | suggestion |
-| Nettoyer les gouttières | annuelle, automne | ⚪ | suggestion |
+### 9.3 Maison (réponses du 23/10/2026 ; toutes les suggestions sont gardées)
+| Tâche | Fréquence | Prochaine | Souplesse | Priorité |
+|---|---|---|---|---|
+| Nettoyer l'adoucisseur d'eau (dernier : 03/10/2026) | 6 mois après le dernier | vers le 03/04/2027 | ± 15 j | 🟠 |
+| Graisser les lames de la pergola bioclimatique (neuve, jamais graissée) | chaque année, fin octobre ou début novembre | vers le 15/11/2026, puis vers le 01/11 | ± 15 j | 🟠 |
+| Ramonage de la cheminée (garder le certificat : demandé par l'assurance) | chaque année, vers septembre, avant le premier feu (souvent en novembre) | **à confirmer** : fait en 2026 ? Sinon avant le premier feu, vers le 15/11/2026 ; ensuite vers le 15/09 | ± 15 j ; préparation : réserver le ramoneur 30 j avant | 🔴 obligation |
+| Recharger le sel de l'adoucisseur | **à préciser** | à compléter | ± 7 j | ⚪ |
+| Entretien de la chaudière ou de la pompe à chaleur (obligatoire chaque année) | annuelle | **à préciser** : quel appareil, date du dernier entretien | 🔒 impérative | 🔴 |
+| Tester les détecteurs de fumée, changer les piles | 6 mois | vers le 01/12/2026 | ± 15 j | 🟠 |
+| Nettoyer les bouches et filtres de la VMC | 6 mois | vers le 01/12/2026 | ± 15 j | ⚪ |
+| Nettoyer les gouttières (après la chute des feuilles) | chaque automne | vers le 30/11/2026 | ± 15 j | ⚪ |
+| Apporter le robot tondeuse à l'entretien (après la dernière tonte) | chaque année, novembre | vers le 15/11/2026 | ± 15 j | ⚪ |
+| Passage du paysagiste | chaque année, novembre | vers le 15/11/2026 ; **2026 : à réserver dès maintenant, si ce n'est pas déjà fait** | ± 15 j ; préparation : appeler le paysagiste 60 j avant | 🟠 |
+| Hiverner la piscine | chaque année, vers novembre | vers le 15/11/2026, **à confirmer si déjà fait** | condition : eau autour de 12 °C, avant les premières gelées (4.4) | 🟠 |
 
-### 9.4 Voitures (une fiche par véhicule, à compléter)
-| Tâche | Fréquence | Priorité | Origine |
-|---|---|---|---|
-| Contrôle technique | tous les 2 ans, date limite du dernier procès-verbal | 🔴 obligation | propriétaire |
-| Pneus hiver ou chaînes (obligation loi Montagne en Isère et dans les Hautes-Alpes du 1er novembre au 31 mars) | pose avant le 1er novembre, dépose après le 31 mars | 🔴 | suggestion |
-| Entretien constructeur (vidange…) | selon le carnet, km ou date | 🟠 | suggestion |
-| Échéance de l'assurance | annuelle | 🟠 | suggestion |
+### 9.4 Voitures (réponses du 23/10/2026 ; toutes les suggestions sont gardées)
+**VW Eos d'Agnès**
 
-### 9.5 Appartement 405 et administratif (suggestions à confirmer)
+| Tâche | Fréquence | Prochaine | Souplesse | Priorité |
+|---|---|---|---|---|
+| Contrôle technique (dernier noté au 15/05/2025, date exacte à confirmer sur le procès-verbal) | tous les 2 ans | avant le 15/05/2027 | 🔒 impérative ; préparation : prendre rendez-vous 30 j avant | 🔴 obligation |
+| Mettre les chaînes dans le coffre (loi Montagne) | chaque année | avant le 01/11 (2026 : **dans 9 jours**) | 🔒 impérative | 🔴 |
+| Retirer les chaînes du coffre (fin de l'obligation le 31 mars) | chaque année, avril | vers le 15/04/2027 | ± 15 j | ⚪ |
+| Entretien constructeur (vidange…) | selon le carnet | à compléter | ± 30 j | 🟠 |
+| Échéance de l'assurance | annuelle | à compléter | 🔒 impérative | 🟠 |
+
+**VW Tiguan de Bruno** (acheté en décembre 2023)
+
+| Tâche | Fréquence | Prochaine | Souplesse | Priorité |
+|---|---|---|---|---|
+| Premier contrôle technique (4 ans après la première mise en circulation, date exacte en case B de la carte grise) | puis tous les 2 ans | avant décembre 2027, jour à confirmer | 🔒 impérative ; préparation : prendre rendez-vous 30 j avant | 🔴 obligation |
+| Poser les roues hiver (loi Montagne) | chaque année | avant le 01/11 (2026 : **dans 9 jours**, à confirmer si déjà fait) | 🔒 impérative ; préparation : rendez-vous au garage 21 j avant | 🔴 |
+| Reposer les roues été (fin de l'obligation le 31 mars) | chaque année, avril | vers le 15/04/2027 | ± 15 j | ⚪ |
+| Entretien constructeur (vidange…) | selon le carnet | à compléter | ± 30 j | 🟠 |
+| Échéance de l'assurance | annuelle | à compléter | 🔒 impérative | 🟠 |
+
+Les voitures sont désignées par un nom d'usage. L'immatriculation pourra être saisie dans l'application, mais elle n'apparaît jamais dans le dépôt.
+
+### 9.5 Appartement 405 et administratif (toutes gardées le 23/10/2026 ; dates à compléter, liste « À compléter » du 3.1)
 | Tâche | Fréquence | Priorité |
 |---|---|---|
 | Assurance propriétaire non occupant de l'appartement | annuelle | 🟠 |
@@ -227,11 +275,18 @@ Les adresses de ces services ne reçoivent aucune donnée personnelle : seulemen
 |---|---|---|
 | 1 | Base de données, connexion, accueil, calendrier, fiches, procédures avec photos et vidéos, « Fait » / « Reporter » / « En attente », justificatifs, e-mail de 7 h et résumé du lundi, inventaire du chapitre 9 chargé, sauvegarde | à faire après validation |
 | 2 | Contrôles et actions automatiques de la nuit avec comptes rendus en clair, surveillance externe (UptimeRobot, Healthchecks.io) | à faire |
-| 3 | Abonnement du calendrier dans l'agenda du téléphone, rapport de la sauvegarde du PC transmis au Pilotage | à faire |
+| 3 | Abonnement du calendrier dans l'agenda de l'iPhone et de l'iPad (3.5, souhait confirmé), rapport de la sauvegarde du PC transmis au Pilotage | à faire (l'abonnement peut être avancé en étape 1 si le propriétaire le souhaite) |
 
 ## 11. Questions ouvertes
 
 1. ~~Date de fin du nom de domaine bmlab.fr~~ : 10/09/2027 (réponse du 23/10/2026).
-2. Liste des véhicules (nom d'usage, date du dernier contrôle technique) et dates des dernières réalisations des tâches de la maison.
-3. Suggestions des tableaux 9.3 à 9.5 : à garder, retirer ou compléter.
+2. ~~Véhicules et dates de la maison~~ : réponses du 23/10/2026 (version 0.2). Restent à préciser :
+   - date exacte du dernier contrôle technique de l'Eos ; date de première mise en circulation du Tiguan ;
+   - ramonage, piscine, roues hiver du Tiguan, chaînes de l'Eos, paysagiste : déjà faits ou réservés pour 2026 ?
+   - fréquence de recharge du sel de l'adoucisseur ;
+   - chaudière ou pompe à chaleur : quel appareil, et date du dernier entretien.
+3. ~~Suggestions des tableaux 9.3 à 9.5~~ : toutes gardées (23/10/2026). Les dates inconnues (assurances, entretien constructeur, papiers, abonnements…) seront saisies dans l'application, grâce à la liste « À compléter ».
 4. Comptes UptimeRobot et Healthchecks.io : à créer par le propriétaire au moment de l'étape 2.
+5. Alerte de gel annoncé (4.4) avec Open-Meteo : à garder pour l'étape 2 ?
+6. Tolérances proposées (± 15 jours pour la maison, ± 7 jours par défaut) : à valider.
+7. Abonnement du calendrier sur iPhone et iPad (3.5) : en étape 3 comme prévu, ou avancé en étape 1 ?
