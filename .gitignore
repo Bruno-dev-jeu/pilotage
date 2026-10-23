@@ -1,0 +1,17 @@
+# Données personnelles : jamais dans le dépôt (bases PocketBase locales,
+# justificatifs, photos, vidéos, exports).
+pb_data/
+donnees/
+*.pdf
+*.jpg
+*.jpeg
+*.heic
+*.mov
+*.mp4
+*.png
+!public/icones/*.png
+
+# Outils
+__pycache__/
+node_modules/
+.env

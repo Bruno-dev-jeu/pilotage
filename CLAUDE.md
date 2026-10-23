@@ -4,7 +4,12 @@ Application web privée prévue sur `https://pilotage.bmlab.fr` : tout ce que le
 
 **Projet « chapeau », totalement séparé** des autres projets : site de l'appartement (`C:\Dev\site-accueil-appartement`, psv.bmlab.fr), jeu Immatriculation (`C:\Dev\immatriculation`), Courses (`C:\Dev\courses`). Son propre dépôt, sa propre PocketBase (service `pocketbase-pilotage`, port 8095, `/opt/pocketbase-pilotage`), son propre dossier web (`/var/www/pilotage-bmlab`), son propre bloc Caddy (`/etc/caddy/pilotage.caddy`). Il peut *lire* la documentation des autres projets pour en tirer les tâches, mais ne modifie jamais leurs fichiers ni leurs bases.
 
-`docs/CDC.md` est la **source de vérité vivante** (historique des versions en tête). État au 23/10/2026 : version 0.3, **validée par le propriétaire** ; étape 1 (chapitre 10) en cours.
+`docs/CDC.md` est la **source de vérité vivante** (historique des versions en tête, chapitre 12 « État réel »). État au 23/10/2026 : version 0.4, validée ; **étape 1 construite (application 1.0.0), essayée sur le PC, à installer** (`deploy/INSTALLATION.md`). Le tenir à jour dans le même travail que le code.
+
+## Structure
+- `public/` : l'application (HTML/CSS/JS sans framework ni build, servie telle quelle), comme Courses.
+- `public/echeances.js` : **tous les calculs de dates**, utilisé par les pages *et* par le serveur : à chaque changement, l'envoyer aussi dans `/opt/pocketbase-pilotage/pb_hooks/` puis redémarrer `pocketbase-pilotage`. Essai rapide : `node` avec quelques `assert` (voir l'historique du CDC 0.4).
+- `deploy/` : service systemd, bloc Caddy, sauvegarde, migrations (`pb_migrations/`), règles du serveur (`pb_hooks/` : `pilotage.pb.js` + `pilotage.js` ; rien de déclaré en haut d'un `.pb.js`, tout par `require()`).
 
 ## Conventions (communes aux projets du propriétaire)
 - Parler au propriétaire **en français** (il n'est pas à l'aise en anglais). Textes et commentaires en français.

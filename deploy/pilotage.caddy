@@ -1,0 +1,45 @@
+# Bloc Caddy du Pilotage, posé sur la VM dans un fichier à part,
+# /etc/caddy/pilotage.caddy, appelé par une seule ligne ajoutée à la fin de
+# /etc/caddy/Caddyfile : « import /etc/caddy/pilotage.caddy ». Les blocs des
+# autres projets ne sont pas touchés ; pour retirer le Pilotage, il suffit
+# d'enlever cette ligne.
+# Certificat : obtenu par le port 443 (défi TLS-ALPN), sans jeton Infomaniak
+# (module DNS absent depuis l'incident du 23/10/2026, et inutile ici : le
+# port 443 est ouvert en IPv4 et en IPv6).
+pilotage.bmlab.fr {
+    encode zstd gzip
+    root * /var/www/pilotage-bmlab
+
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy same-origin
+        Strict-Transport-Security "max-age=31536000"
+        X-Frame-Options DENY
+        Permissions-Policy "camera=(self), microphone=(self), geolocation=()"
+        Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; script-src 'self'; style-src 'self'; connect-src 'self'; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        -Server
+    }
+
+    @pages path / *.html *.js *.css *.webmanifest
+    header @pages Cache-Control "no-cache"
+
+    # Ordre strict : API autorisée, puis refus du reste de l'API et des
+    # fichiers internes, puis les pages.
+    route {
+        # Exposé : connexion du compte du propriétaire (mot de passe puis
+        # code par e-mail), collections de l'application, fichiers protégés
+        # (photos, vidéos, justificatifs : jeton requis), route d'essai de
+        # l'e-mail. Jamais la console d'administration ni l'API superuser
+        # (tunnel SSH seulement).
+        @api {
+            path /api/health /api/collections/* /api/files/* /api/pilotage/*
+            not path /api/collections/_superusers/*
+        }
+        reverse_proxy @api 127.0.0.1:8095
+
+        @interdits path /api/* /_/* /docs/* /deploy/* *.md /.git/*
+        respond @interdits 404
+
+        file_server
+    }
+}

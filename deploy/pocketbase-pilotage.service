@@ -1,0 +1,30 @@
+# Service systemd de la PocketBase du Pilotage, à installer dans
+# /etc/systemd/system/pocketbase-pilotage.service sur la VM Debian.
+# Instance totalement séparée de celles de PSV (pocketbase-accueil, 8092),
+# d'Immatriculation (pocketbase-immat, 8093) et de Courses
+# (pocketbase-courses, 8094) : son propre utilisateur système,
+# son propre exécutable, son propre dossier de données, son propre port
+# (8095, en écoute locale uniquement). Aucun secret ici.
+[Unit]
+Description=PocketBase - Pilotage (échéances et entretien)
+After=network.target
+
+[Service]
+Type=simple
+User=pocketbase-pilotage
+Group=pocketbase-pilotage
+WorkingDirectory=/opt/pocketbase-pilotage
+ExecStart=/opt/pocketbase-pilotage/pocketbase serve --http=127.0.0.1:8095 --dir=/opt/pocketbase-pilotage/pb_data --migrationsDir=/opt/pocketbase-pilotage/pb_migrations --hooksDir=/opt/pocketbase-pilotage/pb_hooks
+Restart=always
+RestartSec=5
+LimitNOFILE=4096
+
+# Durcissement : le service ne peut écrire que dans son propre dossier.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/pocketbase-pilotage
+
+[Install]
+WantedBy=multi-user.target

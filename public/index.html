@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#2f5d8a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pilotage">
+<title>Pilotage</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icones/icone.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+<link rel="stylesheet" href="style.css?v=20261023a">
+</head>
+<body>
+<div id="appli" hidden>
+  <header class="entete">
+    <h1 id="titre">Pilotage</h1>
+  </header>
+  <main id="vue" tabindex="-1"></main>
+  <nav class="onglets" aria-label="Navigation principale">
+    <a href="#/accueil" data-onglet="accueil"><span aria-hidden="true">📋</span>Aujourd'hui</a>
+    <a href="#/calendrier" data-onglet="calendrier"><span aria-hidden="true">📅</span>Calendrier</a>
+    <a href="#/nouvelle" data-onglet="nouvelle"><span aria-hidden="true">➕</span>Ajouter</a>
+    <a href="#/reglages" data-onglet="reglages"><span aria-hidden="true">⚙️</span>Réglages</a>
+  </nav>
+</div>
+
+<main id="connexion" class="connexion" hidden>
+  <h1>Pilotage</h1>
+  <p class="discret">Échéances et entretien</p>
+  <p id="connexion-message" class="message" role="alert" hidden></p>
+  <form id="formulaire-connexion">
+    <label for="email">Adresse e-mail</label>
+    <input id="email" name="email" type="email" autocomplete="username" required>
+    <label for="mdp">Mot de passe</label>
+    <input id="mdp" name="mdp" type="password" autocomplete="current-password" required>
+    <button type="submit" class="bouton">Se connecter</button>
+  </form>
+  <form id="formulaire-code" hidden>
+    <p id="code-explication"></p>
+    <label for="code">Code reçu par e-mail</label>
+    <input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,7}" maxlength="7" required>
+    <button type="submit" class="bouton">Valider le code</button>
+    <button type="button" id="recommencer" class="bouton secondaire">Recommencer la connexion</button>
+  </form>
+</main>
+
+<script src="api.js?v=20261023a"></script>
+<script src="dialogue.js?v=20261023a"></script>
+<script src="echeances.js?v=20261023a"></script>
+<script src="outils.js?v=20261023a"></script>
+<script src="fiche.js?v=20261023a"></script>
+<script src="editeur.js?v=20261023a"></script>
+<script src="reglages.js?v=20261023a"></script>
+<script src="app.js?v=20261023a"></script>
+</body>
+</html>
