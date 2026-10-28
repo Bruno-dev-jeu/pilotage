@@ -111,7 +111,7 @@ Préparatif : sur le site de Shadow Drive, **connecté au compte dédié aux sau
 ```
 sudo rclone config --config /root/.config/rclone/pilotage.conf
 ```
-1. `n`, nom `shadow-pilotage`, type `webdav`, url `https://drive.shadow.tech/remote.php/webdav`, vendor `nextcloud`, user = identifiant du compte dédié, password : `y` puis le mot de passe d'application (deux fois), bearer_token vide, options avancées `n`, `y`.
+1. `n`, nom `shadow-pilotage`, type `webdav`, url `https://drive.shadow.tech/remote.php/webdav`, vendor `nextcloud`, user = nom d'utilisateur du jeton (**attention** : chez Shadow Drive, chaque mot de passe d'application a **son propre nom d'utilisateur**, du type `bruno.milesi-1234`, affiché sous le jeton dans la liste : c'est lui qu'il faut saisir ici, jamais celui d'un autre jeton), password : `y` puis le mot de passe d'application (deux fois), bearer_token vide, options avancées `n`, `y`.
 2. `n`, nom `pilotage-chiffre`, type `crypt`, remote `shadow-pilotage:SAV pilotage.bmlab.fr chiffre`, filename_encryption `off`, directory_name_encryption `false`, password : `y` puis une **nouvelle phrase secrète** (deux fois), password2 : `y` puis une **seconde phrase** (deux fois). Phrases différentes de celles de PSV et de Courses, notées dans le gestionnaire de mots de passe. Options avancées `n`, `y`.
 3. `q`.
 
