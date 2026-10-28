@@ -1,8 +1,8 @@
-# Installation initiale du Pilotage sur sommeil-server
+# Installation initiale du Pilotage sur le serveur bmlab
 
 À faire une seule fois. Rien ici ne modifie PSV, Immatriculation ni Courses : nouvel utilisateur système, nouveau dossier, nouveau service, nouveau fichier Caddy appelé par une seule ligne.
 
-Légende : « PC » = PowerShell sur le PC ; « Serveur » = une fois connecté par `ssh freebox-sommeil@sommeil-server`.
+Légende : « PC » = PowerShell sur le PC ; « Serveur » = une fois connecté par `ssh bmlab`.
 
 ## 1. DNS (Manager Infomaniak, zone bmlab.fr)
 
@@ -11,16 +11,16 @@ Créer `pilotage` avec les **mêmes valeurs** que `courses` : un enregistrement 
 ## 2. Envoyer les fichiers (PC)
 
 ```
-cd C:\Dev\pilotage; scp deploy\pocketbase-pilotage.service deploy\pilotage.caddy deploy\sauvegarde_pilotage.sh deploy\pb_migrations\1810000000_comptes.js deploy\pb_migrations\1810100000_collections.js deploy\pb_migrations\1810200000_inventaire.js deploy\pb_hooks\pilotage.pb.js deploy\pb_hooks\pilotage.js public\echeances.js freebox-sommeil@sommeil-server:/tmp/
+cd C:\Dev\pilotage; scp deploy\pocketbase-pilotage.service deploy\pilotage.caddy deploy\sauvegarde_pilotage.sh deploy\pb_migrations\1810000000_comptes.js deploy\pb_migrations\1810100000_collections.js deploy\pb_migrations\1810200000_inventaire.js deploy\pb_hooks\pilotage.pb.js deploy\pb_hooks\pilotage.js public\echeances.js bmlab:/tmp/
 ```
 ```
-cd C:\Dev\pilotage; scp public\index.html public\style.css public\robots.txt public\manifest.webmanifest public\api.js public\dialogue.js public\outils.js public\app.js public\fiche.js public\editeur.js public\reglages.js public\icones\icone.svg public\icones\icone-192.png public\icones\icone-512.png public\icones\apple-touch-icon.png freebox-sommeil@sommeil-server:/tmp/
+cd C:\Dev\pilotage; scp public\index.html public\style.css public\robots.txt public\manifest.webmanifest public\api.js public\dialogue.js public\outils.js public\app.js public\fiche.js public\editeur.js public\reglages.js public\icones\icone.svg public\icones\icone-192.png public\icones\icone-512.png public\icones\apple-touch-icon.png bmlab:/tmp/
 ```
 
 ## 3. Sur le serveur
 
 ```
-ssh freebox-sommeil@sommeil-server
+ssh bmlab
 ```
 
 Vérifier que le port 8095 est libre (aucune ligne attendue) :
@@ -79,7 +79,7 @@ Si `caddy validate` signale une erreur : ne pas recharger, remettre la sauvegard
 
 Dans une nouvelle fenêtre PowerShell, laisser tourner :
 ```
-ssh -L 8095:127.0.0.1:8095 freebox-sommeil@sommeil-server
+ssh -L 8095:127.0.0.1:8095 bmlab
 ```
 Dans cette fenêtre (serveur), récupérer le lien de création :
 ```

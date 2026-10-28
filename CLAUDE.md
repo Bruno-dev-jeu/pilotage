@@ -16,7 +16,7 @@ Application web privée prévue sur `https://pilotage.bmlab.fr` : tout ce que le
 - **Jamais de secret** dans le code ni le CDC (mots de passe, jetons, adresse e-mail personnelle). Le destinataire des e-mails est le même que celui du rapport de sauvegarde du PC, saisi dans les réglages.
 - Seule `contact@bmlab.fr` peut apparaître publiquement comme adresse du propriétaire.
 - Pas de triptyque ni de plaque « Puy-Saint-Vincent / Hameau des Écrins / Appartement 405 » : outil général.
-- **Fin de travail** : commiter et pousser sans demander, puis donner les commandes de déploiement en 3 temps : `cd C:\Dev\pilotage; scp … freebox-sommeil@sommeil-server:/tmp/` (point-virgule, PowerShell 5.1), puis `ssh freebox-sommeil@sommeil-server` seul, puis les `sudo mv /tmp/… …`. Ne jamais lancer soi-même `scp` ni `ssh`.
+- **Fin de travail** : commiter et pousser sans demander, puis donner les commandes de déploiement en 3 temps : `cd C:\Dev\pilotage; scp … bmlab:/tmp/` (point-virgule, PowerShell 5.1), puis `ssh bmlab` seul, puis les `sudo mv /tmp/… …`. Ne jamais lancer soi-même `scp` ni `ssh`.
 - Le propriétaire n'a pas d'éditeur utilisable sur le serveur (nano ne marche pas dans son terminal) : poser les fichiers par `scp` ou `printf … | sudo tee`.
 - Serveur : Caddy enrichi du module `caddy-dns/infomaniak`, **bloqué dans apt** (`apt-mark hold caddy`) ; mise à jour par `sudo caddy upgrade` uniquement (incident du 23/10/2026, CDC PSV v3.73). Ne jamais demander la sortie de `journalctl -u caddy` sans prévenir qu'elle peut afficher le jeton Infomaniak.
 - Cible : Safari iOS 15+ (pas de fonction déclarée dans un bloc `if`), téléphone d'abord.
