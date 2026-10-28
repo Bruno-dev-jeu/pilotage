@@ -17,21 +17,20 @@
 
   function tache(zone, a) {
     var id = a.chemin[0] === "modifier" ? a.chemin[1] : "";
-    O.titre(id ? "Modifier la tâche" : "Nouvelle tâche");
-    zone.appendChild(O.barreFermer(id ? "#/tache/" + id : "#/accueil"));
-    if (!id) {
-      formulaire(zone, {
-        titre: "", domaine: a.params.domaine || O.filtre() || "", priorite: "important", mode: "apres", intervalle: 1, unite: "ans",
-        dates_fixes: "", echeance: "", souplesse: "souple", tolerance: 7, rappel_jours: 0, preparation: "", preparation_jours: 0,
-        condition: "", etat: "active", derniere_realisation: "", materiel: "", contacts: "", notes: "",
-      });
-      return;
-    }
+    var reference = a.params.mode === "reference";
+    O.titre(id ? "Modifier la fiche" : reference ? "Nouvelle fiche de référence" : "Nouvelle tâche");
+    zone.appendChild(O.barreFermer(id ? "#/tache/" + id : "#/fiches"));
     var attente = O.attente();
     zone.appendChild(attente);
-    Api.un("taches", id).then(function (t) {
+    Promise.all([id ? Api.un("taches", id) : null, O.regles()]).then(function (r) {
       zone.removeChild(attente);
-      formulaire(zone, t);
+      var R = r[1];
+      formulaire(zone, r[0] || {
+        titre: "", domaine: a.params.domaine || O.filtre() || "", priorite: reference ? "confort" : "important",
+        mode: reference ? "reference" : "apres", intervalle: 1, unite: "ans",
+        dates_fixes: "", echeance: "", souplesse: "souple", tolerance: R.tolerance, rappel_jours: 0, preparation: "", preparation_jours: 0,
+        condition: "", etat: "active", derniere_realisation: "", materiel: "", contacts: "", notes: "",
+      }, R);
     }, function (e) {
       zone.removeChild(attente);
       zone.appendChild(O.erreur(e));
@@ -42,12 +41,12 @@
     return el("input", Object.assign({ type: "number", inputmode: "numeric", min: "0", valeur: v ? String(v) : "" }, attributs || {}));
   }
 
-  function formulaire(zone, t) {
+  function formulaire(zone, t, R) {
     var f = {
       titre: el("input", { type: "text", maxlength: "200", valeur: t.titre, placeholder: "Ex. Nettoyer l'adoucisseur d'eau" }),
       domaine: O.choixDomaine(t.domaine, false),
       priorite: O.choix(O.PRIORITES, t.priorite),
-      mode: O.choix([["apres", "Après la dernière réalisation"], ["fixe", "À dates fixes du calendrier"], ["unique", "Une seule fois"]], t.mode),
+      mode: O.choix([["apres", "Répétée : après la dernière réalisation"], ["fixe", "Répétée : à dates fixes du calendrier"], ["unique", "Une seule fois"], ["reference", "📘 Fiche de référence, sans échéance"]], t.mode),
       intervalle: nombre(t.intervalle, { min: "1" }),
       unite: O.choix([["jours", "jours"], ["semaines", "semaines"], ["mois", "mois"], ["ans", "ans"]], t.unite || "mois"),
       dates_fixes: el("input", { type: "text", maxlength: "200", valeur: t.dates_fixes, placeholder: "Ex. 15/01, 15/04, 15/07, 15/10" }),
@@ -73,7 +72,11 @@
       if (!l) return Dialogue.informer({ titre: "Dates illisibles", texte: "Écrivez les dates au format JJ/MM, séparées par des virgules. Ex. 15/01, 15/04." });
       f.echeance.value = E.dateFixeApres(l, E.ajouterJours(E.aujourdhui(), -1));
     });
+    var blocEcheance = el("div", { classe: "formulaire" });
+    var blocCondition = O.champ("Condition à observer (facultatif)", f.condition);
     function majVisibles() {
+      blocEcheance.hidden = f.mode.value === "reference";
+      blocCondition.hidden = f.mode.value === "reference";
       blocApres.hidden = f.mode.value !== "apres";
       blocFixe.hidden = f.mode.value !== "fixe";
       proposer.hidden = f.mode.value !== "fixe";
@@ -81,40 +84,47 @@
     }
     f.mode.addEventListener("change", majVisibles);
     f.souplesse.addEventListener("change", majVisibles);
-    majVisibles();
 
     var message = el("p", { classe: "message", role: "alert", hidden: "hidden" });
     var enregistrer = el("button", { type: "button", classe: "bouton", texte: "Enregistrer" });
-    zone.appendChild(el("div", { classe: "formulaire" }, [
-      O.champ("Ce qu'il faut faire", f.titre),
-      O.champ("Domaine", f.domaine),
+    function regle(p) {
+      var x = R[p];
+      return (x.retard ? (x.retard === 1 ? "rappel chaque jour en retard" : "tous les " + x.retard + " jours en retard") : "en retard : résumé du lundi") +
+        (x.matin ? "" : ", rappels le lundi seulement");
+    }
+    [
       el("div", { classe: "champs" }, [
         O.champ("Priorité", f.priorite),
         O.champ("Date", f.souplesse),
       ]),
       el("p", { classe: "aide", texte: "Souple : à quelques jours près (pergola). Impérative : obligation ou contrat, en retard dès le lendemain (contrôle technique)." }),
-      el("p", { classe: "aide", texte: "🔴 critique : rappel chaque jour en retard · 🟠 important : tous les 3 jours · ⚪ confort : résumé du lundi seulement." }),
+      el("p", { classe: "aide", texte: "🔴 critique : " + regle("critique") + " · 🟠 important : " + regle("important") + " · ⚪ confort : " + regle("confort") + ". Règles modifiables dans les Réglages." }),
       blocTolerance,
-      el("h3", { texte: "Répétition" }),
-      O.champ("Mode", f.mode),
       blocApres,
       blocFixe,
       O.champ("Prochaine échéance", f.echeance, "Vide : date inconnue, la tâche va dans « À compléter » et n'envoie aucun rappel."),
       proposer,
       O.champ("Dernière réalisation (facultatif)", f.derniere_realisation),
-      O.champ("Premier rappel par e-mail, en jours avant (facultatif)", f.rappel_jours, "Vide : 30 jours pour une tâche annuelle ou plus, 7 jours sinon. Ex. 90 pour une carte d'identité."),
+      O.champ("Premier rappel par e-mail, en jours avant (facultatif)", f.rappel_jours, "Vide : " + R.avance_annuelle + " jours pour une tâche annuelle ou plus, " + R.avance + " jours sinon. Ex. 90 pour une carte d'identité."),
       el("h3", { texte: "Préparation à l'avance (facultatif)" }),
       O.champ("Ce qu'il faut faire à l'avance", f.preparation),
       O.champ("Combien de jours avant", f.preparation_jours, "Ex. 60 pour réserver un artisan, 30 pour un rendez-vous."),
+    ].forEach(function (n) { blocEcheance.appendChild(n); });
+    majVisibles();
+    zone.appendChild(el("div", { classe: "formulaire" }, [
+      O.champ(t.mode === "reference" ? "Titre de la fiche" : "Ce qu'il faut faire", f.titre),
+      O.champ("Domaine", f.domaine),
+      O.champ("Genre de fiche", f.mode, "Une fiche de référence garde une procédure, des photos, des contacts, sans aucune date ni rappel. Elle peut devenir une tâche répétée plus tard."),
+      blocEcheance,
       el("h3", { texte: "Informations" }),
-      O.champ("Condition à observer (facultatif)", f.condition),
+      blocCondition,
       el("p", { classe: "rappel-secret", texte: RAPPEL_SECRET }),
       O.champ("Matériel ou produits nécessaires", f.materiel),
       O.champ("Contacts utiles", f.contacts),
       O.champ("Notes", f.notes),
       message,
       enregistrer,
-      t.id ? el("button", { type: "button", classe: "bouton danger", texte: "Supprimer la tâche", onclick: function () { supprimer(t); } }) : null,
+      t.id ? el("button", { type: "button", classe: "bouton danger", texte: "Supprimer la fiche", onclick: function () { supprimer(t); } }) : null,
     ]));
 
     enregistrer.addEventListener("click", function () {
@@ -129,8 +139,19 @@
         derniere_realisation: O.dateBase(f.derniere_realisation.value), materiel: f.materiel.value.trim(),
         contacts: f.contacts.value.trim(), notes: f.notes.value.trim(),
       };
+      // Fiche de référence : aucune date, aucun rappel.
+      if (d.mode === "reference") {
+        d.echeance = "";
+        d.condition = "";
+        d.preparation = "";
+        d.preparation_jours = 0;
+        d.rappel_jours = 0;
+        d.date_limite = "";
+        d.rappel_envoye = "";
+        d.etat = "active";
+      }
       var erreurs = [];
-      if (!d.titre) erreurs.push("Indiquez ce qu'il faut faire.");
+      if (!d.titre) erreurs.push(d.mode === "reference" ? "Indiquez le titre de la fiche." : "Indiquez ce qu'il faut faire.");
       if (!d.domaine) erreurs.push("Choisissez un domaine.");
       if (d.mode === "apres" && d.intervalle < 1) erreurs.push("Indiquez l'intervalle (ex. tous les 6 mois).");
       if (d.mode === "fixe" && !E.lireDatesFixes(d.dates_fixes)) erreurs.push("Écrivez les dates fixes au format JJ/MM, séparées par des virgules.");

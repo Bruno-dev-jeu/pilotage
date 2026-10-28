@@ -115,11 +115,19 @@ function chargerTaches(app) {
 function reglages(app) {
   try {
     const r = app.findRecordsByFilter("reglages", "id != ''", "created", 1, 0)
-    if (r.length) return { email: r[0].getString("email_rappels"), site: r[0].getString("adresse_site") || "https://pilotage.bmlab.fr" }
+    if (r.length) {
+      let regles = null
+      try {
+        regles = JSON.parse(r[0].getString("regles") || "null")
+      } catch (err) {
+        regles = null
+      }
+      return { email: r[0].getString("email_rappels"), site: r[0].getString("adresse_site") || "https://pilotage.bmlab.fr", regles: E.regles(regles) }
+    }
   } catch (err) {
     // pas encore de réglages
   }
-  return { email: "", site: "https://pilotage.bmlab.fr" }
+  return { email: "", site: "https://pilotage.bmlab.fr", regles: E.regles(null) }
 }
 
 function ligne(el, auj, site) {
@@ -152,7 +160,7 @@ function texteLigne(el, auj) {
 function composer(app, auj, lundi, essai) {
   const r = reglages(app)
   const taches = chargerTaches(app)
-  const sel = E.courriel(taches, auj, lundi || essai)
+  const sel = E.courriel(taches, auj, lundi || essai, r.regles)
   const tb = E.tableau(taches, auj)
   const rien = !sel.retard.length && !sel.aujourdhui.length && !sel.bientot.length
   if (rien && !lundi && !essai) return { rien: true, reglages: r }

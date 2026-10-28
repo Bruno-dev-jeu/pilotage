@@ -11,10 +11,10 @@ Créer `pilotage` avec les **mêmes valeurs** que `courses` : un enregistrement 
 ## 2. Envoyer les fichiers (PC)
 
 ```
-cd C:\Dev\pilotage; scp deploy\pocketbase-pilotage.service deploy\pilotage.caddy deploy\sauvegarde_pilotage.sh deploy\pb_migrations\1810000000_comptes.js deploy\pb_migrations\1810100000_collections.js deploy\pb_migrations\1810200000_inventaire.js deploy\pb_hooks\pilotage.pb.js deploy\pb_hooks\pilotage.js public\echeances.js bmlab:/tmp/
+cd C:\Dev\pilotage; scp deploy\pocketbase-pilotage.service deploy\pilotage.caddy deploy\sauvegarde_pilotage.sh deploy\pb_migrations\1810000000_comptes.js deploy\pb_migrations\1810100000_collections.js deploy\pb_migrations\1810200000_inventaire.js deploy\pb_migrations\1810300000_psv_liens_tarifs.js deploy\pb_migrations\1810400000_references_regles.js deploy\pb_hooks\pilotage.pb.js deploy\pb_hooks\pilotage.js public\echeances.js bmlab:/tmp/
 ```
 ```
-cd C:\Dev\pilotage; scp public\index.html public\style.css public\robots.txt public\manifest.webmanifest public\api.js public\dialogue.js public\outils.js public\app.js public\fiche.js public\editeur.js public\reglages.js public\icones\icone.svg public\icones\icone-192.png public\icones\icone-512.png public\icones\apple-touch-icon.png bmlab:/tmp/
+cd C:\Dev\pilotage; scp public\index.html public\style.css public\robots.txt public\manifest.webmanifest public\api.js public\dialogue.js public\outils.js public\app.js public\fiche.js public\editeur.js public\reglages.js public\repertoire.js public\icones\icone.svg public\icones\icone-192.png public\icones\icone-512.png public\icones\apple-touch-icon.png bmlab:/tmp/
 ```
 
 ## 3. Sur le serveur
@@ -44,7 +44,7 @@ sudo unzip -o pocketbase_0.40.5_linux_arm64.zip pocketbase -d /opt/pocketbase-pi
 
 Migrations et règles du serveur (le fichier `echeances.js` va **aussi** dans les pages, plus bas) :
 ```
-sudo mv /tmp/1810000000_comptes.js /tmp/1810100000_collections.js /tmp/1810200000_inventaire.js /opt/pocketbase-pilotage/pb_migrations/
+sudo mv /tmp/1810000000_comptes.js /tmp/1810100000_collections.js /tmp/1810200000_inventaire.js /tmp/1810300000_psv_liens_tarifs.js /tmp/1810400000_references_regles.js /opt/pocketbase-pilotage/pb_migrations/
 sudo cp /tmp/echeances.js /opt/pocketbase-pilotage/pb_hooks/
 sudo mv /tmp/pilotage.pb.js /tmp/pilotage.js /opt/pocketbase-pilotage/pb_hooks/
 sudo chown -R pocketbase-pilotage:pocketbase-pilotage /opt/pocketbase-pilotage
@@ -62,7 +62,7 @@ Attendu : aucune erreur ; les migrations créent les collections et chargent l'i
 Pages :
 ```
 sudo mv /tmp/icone.svg /tmp/icone-192.png /tmp/icone-512.png /tmp/apple-touch-icon.png /var/www/pilotage-bmlab/icones/
-sudo mv /tmp/index.html /tmp/style.css /tmp/robots.txt /tmp/manifest.webmanifest /tmp/api.js /tmp/dialogue.js /tmp/echeances.js /tmp/outils.js /tmp/app.js /tmp/fiche.js /tmp/editeur.js /tmp/reglages.js /var/www/pilotage-bmlab/
+sudo mv /tmp/index.html /tmp/style.css /tmp/robots.txt /tmp/manifest.webmanifest /tmp/api.js /tmp/dialogue.js /tmp/echeances.js /tmp/outils.js /tmp/app.js /tmp/fiche.js /tmp/editeur.js /tmp/reglages.js /tmp/repertoire.js /var/www/pilotage-bmlab/
 ```
 
 Caddy (sauvegarde, fichier à part, une ligne ajoutée, contrôle, rechargement) :

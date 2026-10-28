@@ -1,8 +1,9 @@
 # Cahier des charges — Pilotage (échéances et entretien, tous domaines)
 
-Version 0.8 — 28/10/2026 · Validée par le propriétaire ; étape 1 construite (application 1.0.0) et installée sur le serveur
+Version 0.9 — 28/10/2026 · Validée par le propriétaire ; étape 1 installée ; **application 1.1.0 (fiches de référence, règles de rappel réglables) construite, à installer**
 
 **Historique des versions**
+- Version 0.9 (28/10/2026) : **deux évolutions demandées et validées par le propriétaire** (réponses du 28/10 : « 1 oui, 2 trois niveaux réglables, 3 les évolutions d'abord »), application 1.1.0. 1) **Fiches de référence**, sans échéance ni rappel (3.6) : nouveau genre de fiche (mode `reference`), avec procédure, photos, vidéos, matériel, contacts, notes et historique ; jamais dans l'accueil, le calendrier, « À compléter » ni les e-mails ; **nouvel onglet « Fiches »** (`repertoire.js`), qui remplace l'onglet « Ajouter » : toutes les fiches rangées par domaine, recherche par mot sans tenir compte des accents, filtres par domaine et par genre (tâches, références, terminées), boutons « ＋ Tâche » et « ＋ Fiche de référence ». 2) **Règles de rappel réglables** (4.5) : les trois priorités restent fixes, leurs règles se règlent dans Réglages > Règles de rappel (rappel en retard tous les N jours, 0 = lundi seulement ; premier rappel et jour J dans l'e-mail du matin ou non ; premier rappel par défaut, pour une tâche annuelle, tolérance proposée), avec retour aux règles d'origine ; les domaines étaient déjà modifiables (Réglages > Domaines). Migration `1810400000_references_regles.js` (valeur `reference` du mode, champ JSON `regles` des réglages, avec texte d'aide). Essayé sur la base locale : migration, création d'une fiche de référence (formulaire réduit aux champs utiles), recherche, fiche sans boutons d'échéance, enregistrement des règles et reprise de la tolérance dans une nouvelle tâche, e-mail d'essai avec les règles. Sécurité : sans objet (même surface ; les règles sont bornées côté pages et côté serveur, une valeur aberrante reprend la valeur d'origine).
 - Version 0.8 (28/10/2026) : **sauvegarde hors site installée** (notice, section 7), avec le propriétaire : jeton Shadow Drive « Serveur Pilotage sauvegardes » sur le compte dédié, `/root/.config/rclone/pilotage.conf` (remotes `shadow-pilotage` et `pilotage-chiffre`, dossier `SAV pilotage.bmlab.fr chiffre`), script `sauvegarde_pilotage.sh` en crontab de root à 3 h 50 ; premier passage `OK`, 4 sauvegardes copiées. Notice précisée : chaque jeton Shadow Drive a son propre nom d'utilisateur (une erreur de consigne avait branché Jardin sur le jeton de Courses, corrigé ensuite). Sécurité : les données du Pilotage (procédures, photos, justificatifs) ont enfin une copie chiffrée hors site.
 - Version 0.7 (28/10/2026) : **jeton Infomaniak supprimé** : tous les sites (psv, immat, courses, vitrine, pilotage, jardin) obtiennent désormais leur certificat par le port 443 ; jeton retiré du serveur et révoqué. La tâche « remplacer le jeton Infomaniak » (une seule fois) est donc sans objet : à clore dans l'application. Le contrôle de nuit des certificats reste utile (premiers renouvellements par le port 443 : psv vers le 09/11, immat vers le 20/11). Sécurité : un secret de moins.
 - Version 0.6 (28/10/2026) : **Serveur renommé le 28/10/2026 : machine `sommeil-server` devenue `bmlab` (nom local `bmlab.home`), compte `freebox-sommeil` remplacé par le compte `bmlab` (sudo avec mot de passe), raccourci `ssh bmlab` dans `C:\Users\bmiof\.ssh\config` sur le PC**. Notice d'installation et CLAUDE.md passés à `scp … bmlab:/tmp/`, `ssh bmlab`, `ssh -L 8095:127.0.0.1:8095 bmlab`. Constat du 28/10 : la crontab de root ne contient que les sauvegardes de PSV (3 h 30) et de Courses (3 h 45) ; celle du Pilotage (section 7 de la notice, 3 h 50) **n'est toujours pas installée**. Ancien compte `freebox-sommeil` supprimé le jour même. Tâches à ajouter dans l'application : installer la sauvegarde du Pilotage, contrôles de nuit de Jardin (nouveau projet, `jardin.bmlab.fr`). Sécurité : `sudo` avec mot de passe, ancien compte verrouillé.
@@ -82,6 +83,11 @@ Les procédures informatiques sont écrites par Claude, dans le même format, et
 
 ## 4. Les tâches
 
+### 3.6 Fiches de référence et onglet « Fiches » (validé le 28/10/2026)
+- Une **fiche de référence** garde un savoir sans date : où sont les vannes d'eau, purger les radiateurs, réglages de la box. Elle a la même procédure pas à pas (photos, vidéos, commandes), le matériel, les contacts, les notes et l'historique qu'une tâche, mais **aucune échéance ni rappel** : elle n'apparaît ni dans l'accueil, ni dans le calendrier, ni dans « À compléter », ni dans les e-mails.
+- Une fiche de référence peut devenir une tâche répétée (et l'inverse) en changeant son genre dans « Modifier la fiche ».
+- L'onglet **« Fiches »** remplace l'onglet « Ajouter » : toutes les fiches, rangées par domaine, avec une recherche par mot (titre, notes, matériel, contacts, sans tenir compte des accents), un filtre par domaine et par genre, et les boutons « ＋ Tâche » et « ＋ Fiche de référence ».
+
 ### 4.1 Modes de répétition
 | Mode | Exemple | Calcul de la prochaine date |
 |---|---|---|
@@ -118,6 +124,8 @@ Certaines tâches dépendent d'une observation plutôt que du calendrier : hiver
 | ⚪ **Confort** | le reste | dans le résumé du lundi | dans le résumé du lundi | dans le résumé du lundi |
 
 Pour une tâche souple, « le jour J » est le début de la tolérance (*date − N jours*) et « en retard » commence à *date + N jours* (4.2).
+
+**Règles réglables** (validé le 28/10/2026) : les trois priorités restent fixes, mais leurs règles se règlent dans Réglages > Règles de rappel : rappel en retard tous les N jours (0 = résumé du lundi seulement), premier rappel et jour J dans l'e-mail du matin ou seulement le lundi, premier rappel par défaut (7 jours) et pour une tâche annuelle (30 jours), tolérance proposée pour une nouvelle tâche souple (7 jours). Le tableau ci-dessus donne les règles d'origine ; un bouton y revient.
 
 ### 4.6 Tâches « en attente »
 Une tâche peut attendre une réponse ou un événement extérieur. Elle porte :
@@ -311,3 +319,5 @@ Les voitures sont désignées par un nom d'usage. L'immatriculation pourra être
 **E-mail du matin** : tâche planifiée toutes les 15 minutes de 5 h à 6 h 45 UTC ; l'envoi part au premier passage où il est 7 h à Paris, une fois par jour ; un échec est retenté jusqu'à 6 fois ; chaque matin laisse une ligne dans `envois` (« rien à signaler » compris), affichée en bas de l'accueil et dans les réglages. Expéditeur : relais Infomaniak réglé dans la console, nom « Pilotage ».
 
 **Reste à faire pour l'étape 1** : installation sur le serveur (`deploy/INSTALLATION.md`) ; procédures informatiques à écrire par Claude dans l'application (montée de version, test de restauration, revue de sécurité) ; premier e-mail du matin réel à vérifier.
+
+**Application 1.1.0 (28/10/2026)** : onglet « Fiches » (`public/repertoire.js`), fiches de référence (mode `reference`, exclues de tous les calculs dans `echeances.js`), règles de rappel réglables (`reglages.regles`, lues par `E.regles()` qui complète et borne les valeurs ; utilisées par l'e-mail du matin et par l'éditeur). Migration `1810400000_references_regles.js`.

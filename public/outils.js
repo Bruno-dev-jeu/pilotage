@@ -6,7 +6,7 @@
   "use strict";
 
   var E = window.Echeances;
-  var cache = { domaines: null, taches: null };
+  var cache = { domaines: null, taches: null, reglage: null };
 
   function el(balise, attributs, enfants) {
     var n = document.createElement(balise);
@@ -117,6 +117,20 @@
     });
   }
 
+  // Fiche des réglages (destinataire, règles de rappel), ou null.
+  function reglage(forcer) {
+    if (cache.reglage && !forcer) return Promise.resolve(cache.reglage);
+    return Api.liste("reglages", { perPage: 1, sort: "created", skipTotal: 1 }).then(function (d) {
+      cache.reglage = d.items[0] || null;
+      return cache.reglage;
+    });
+  }
+
+  // Règles de rappel en vigueur (celles d'origine si rien n'est réglé).
+  function regles() {
+    return reglage().then(function (r) { return E.regles(r && r.regles); }, function () { return E.regles(null); });
+  }
+
   function oublier() {
     cache.taches = null;
   }
@@ -124,6 +138,7 @@
   function oublierTout() {
     cache.taches = null;
     cache.domaines = null;
+    cache.reglage = null;
   }
 
   function domaineParId(id) {
@@ -196,6 +211,7 @@
   // Texte de la fréquence d'une tâche.
   function frequence(t) {
     var n = parseInt(t.intervalle, 10) || 0;
+    if (t.mode === "reference") return "📘 Fiche de référence, sans échéance";
     if (t.mode === "unique") return "Une seule fois";
     if (t.mode === "apres") {
       var u = { jours: "jour", semaines: "semaine", mois: "mois", ans: "an" }[t.unite] || "mois";
@@ -271,6 +287,8 @@
     taches: taches,
     oublier: oublier,
     oublierTout: oublierTout,
+    reglage: reglage,
+    regles: regles,
     domaineParId: domaineParId,
     nomDomaine: nomDomaine,
     arbre: arbre,

@@ -128,17 +128,54 @@
     return false;
   }
 
+  // Règles de rappel par priorité (CDC 4.5), réglables par le propriétaire
+  // (collection « reglages », champ « regles ») :
+  //   retard : rappel en retard tous les N jours (0 = seulement le lundi) ;
+  //   matin : jour J et premier rappel dans l'e-mail du matin (sinon lundi).
+  var REGLES_DEFAUT = {
+    critique: { retard: 1, matin: true },
+    important: { retard: 3, matin: true },
+    confort: { retard: 0, matin: false },
+    avance: 7,
+    avance_annuelle: 30,
+    tolerance: 7,
+  };
+
+  function entier(v, defaut, min, max) {
+    var n = parseInt(v, 10);
+    if (isNaN(n)) return defaut;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  // Règles enregistrées, complétées et bornées (une valeur absente ou
+  // aberrante reprend la valeur par défaut).
+  function regles(r) {
+    r = r && typeof r === "object" ? r : {};
+    var res = {};
+    ["critique", "important", "confort"].forEach(function (p) {
+      var d = REGLES_DEFAUT[p];
+      var x = r[p] && typeof r[p] === "object" ? r[p] : {};
+      res[p] = { retard: entier(x.retard, d.retard, 0, 30), matin: typeof x.matin === "boolean" ? x.matin : d.matin };
+    });
+    res.avance = entier(r.avance, REGLES_DEFAUT.avance, 1, 365);
+    res.avance_annuelle = entier(r.avance_annuelle, REGLES_DEFAUT.avance_annuelle, 1, 365);
+    res.tolerance = entier(r.tolerance, REGLES_DEFAUT.tolerance, 0, 365);
+    return res;
+  }
+
   // Jours d'avance du premier rappel (CDC 4.5) : réglage de la tâche, sinon
-  // 30 pour une tâche annuelle ou plus, 7 sinon.
-  function avance(t) {
+  // règle générale (30 jours pour une tâche annuelle ou plus, 7 sinon).
+  function avance(t, R) {
+    R = R || REGLES_DEFAUT;
     var n = parseInt(t.rappel_jours, 10);
     if (n > 0) return n;
-    return periodeLongue(t) ? 30 : 7;
+    return periodeLongue(t) ? R.avance_annuelle : R.avance;
   }
 
   // Prochaine échéance après une réalisation à la date « fait ».
   // Rend "" pour une tâche unique (elle est alors terminée).
   function prochaine(t, fait) {
+    if (t.mode === "reference") return "";
     var n = parseInt(t.intervalle, 10) || 0;
     if (t.mode === "apres" && n > 0) return ajouter(fait, n, t.unite || "mois");
     if (t.mode === "fixe") {
@@ -158,7 +195,8 @@
   //   ref : date à partir de laquelle on s'en occupe (début de la tolérance)
   //   fin : dernier jour avant le retard
   function elements(t, auj) {
-    if (t.etat === "terminee") return [];
+    // Fiche de référence (CDC 3.6) : jamais d'échéance ni de rappel.
+    if (t.etat === "terminee" || t.mode === "reference") return [];
     if (t.etat === "attente") {
       var r = jour(t.attente_relance);
       return [{ type: "attente", tache: t, ref: r, fin: r, cible: r }];
@@ -218,31 +256,28 @@
     return groupes;
   }
 
-  // Choix du contenu de l'e-mail du matin (CDC 4.5 et 6). Les tâches
-  // « confort » n'y figurent que le lundi (résumé). Rend aussi les tâches
-  // dont le premier rappel part ce jour (champ rappel_envoye à mettre à jour).
-  function courriel(taches, auj, lundi) {
+  // Choix du contenu de l'e-mail du matin (CDC 4.5 et 6), selon les règles
+  // de chaque priorité ; le lundi (résumé), tous les retards. Rend aussi les
+  // tâches dont le premier rappel part ce jour (champ rappel_envoye).
+  function courriel(taches, auj, lundi, R) {
+    R = regles(R);
     var res = { retard: [], aujourdhui: [], bientot: [], aMarquer: [] };
     taches.forEach(function (t) {
-      var confort = t.priorite === "confort";
+      var p = R[t.priorite] || R.important;
       elements(t, auj).forEach(function (el) {
         var g = classer(el, auj);
         if (g === "a_completer") return;
         if (g === "retard") {
-          if (confort) {
-            if (lundi) res.retard.push(el);
-          } else if (t.priorite === "critique" || (el.jours - 1) % 3 === 0 || lundi) {
-            res.retard.push(el);
-          }
+          if (lundi || (p.retard > 0 && (el.jours - 1) % p.retard === 0)) res.retard.push(el);
           return;
         }
-        if (confort) return;
+        if (!p.matin) return;
         if (el.ref && el.ref === auj) {
           res.aujourdhui.push(el);
           if (el.type === "tache") res.aMarquer.push(t);
           return;
         }
-        if (el.type === "tache" && auj < el.ref && auj >= ajouterJours(el.ref, -avance(t)) && jour(t.rappel_envoye) !== el.cible) {
+        if (el.type === "tache" && auj < el.ref && auj >= ajouterJours(el.ref, -avance(t, R)) && jour(t.rappel_envoye) !== el.cible) {
           res.bientot.push(el);
           res.aMarquer.push(t);
         }
@@ -263,7 +298,7 @@
   // l'échéance en cours, ses suivantes prévues, et la préparation en cours.
   function occurrences(t, de, a) {
     var res = [];
-    if (t.etat === "terminee") return res;
+    if (t.etat === "terminee" || t.mode === "reference") return res;
     if (t.etat === "attente") {
       var r = jour(t.attente_relance);
       if (r && r >= de && r <= a) res.push({ date: r, type: "attente" });
@@ -355,6 +390,8 @@
     dateFixeApres: dateFixeApres,
     tolerance: tolerance,
     avance: avance,
+    REGLES_DEFAUT: REGLES_DEFAUT,
+    regles: regles,
     prochaine: prochaine,
     elements: elements,
     classer: classer,

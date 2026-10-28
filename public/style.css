@@ -83,7 +83,7 @@ main#vue {
 
 /* Formulaires */
 input, select, button, textarea { font: inherit; }
-input[type="text"], input[type="email"], input[type="password"], input[type="number"], input[type="date"], input[type="url"], select, textarea {
+input[type="text"], input[type="search"], input[type="email"], input[type="password"], input[type="number"], input[type="date"], input[type="url"], select, textarea {
   width: 100%; padding: 10px 12px; border: 1px solid var(--bord); border-radius: 12px;
   background: var(--surface); color: var(--texte); font-size: 16px; min-height: 44px;
 }
@@ -136,6 +136,16 @@ input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible
 .message { background: var(--alerte-fond); border: 1px solid var(--alerte-bord); border-radius: 12px; padding: 10px 12px; margin: 8px 0; }
 .attente { color: var(--discret); }
 .tout-va-bien { color: var(--vert); font-weight: 600; margin: 8px 0; }
+
+/* Réglages : règles de rappel */
+.regle-priorite { border-top: 1px solid var(--bord); margin-top: 10px; padding-top: 4px; display: grid; gap: 6px; }
+.regle-priorite h3 { margin: 6px 0 0; }
+.case-ligne { display: flex; gap: 10px; align-items: flex-start; font-size: .92rem; cursor: pointer; }
+.case-ligne input { width: 24px; height: 24px; flex: none; accent-color: var(--accent); }
+
+/* Fiches (repertoire.js) */
+.recherche { position: sticky; top: calc(env(safe-area-inset-top) + 48px); z-index: 2; display: grid; gap: 8px; padding: 6px 0 8px; background: var(--fond); }
+.recherche .champs select { font-size: 15px; }
 
 /* Accueil */
 .date-du-jour { margin: 0 0 8px; font-weight: 600; }

@@ -270,7 +270,10 @@
     // En-tête
     zone.appendChild(el("h2", { classe: "titre-tache", texte: t.titre }));
     zone.appendChild(el("p", { classe: "discret", texte: O.nomDomaine(t.domaine) }));
-    zone.appendChild(el("div", { classe: "pastilles" }, [
+    var reference = t.mode === "reference";
+    zone.appendChild(el("div", { classe: "pastilles" }, reference ? [
+      el("span", { classe: "pastille", texte: O.frequence(t) }),
+    ] : [
       el("span", { classe: "pastille " + t.priorite, texte: (O.PRIORITES.filter(function (p) { return p[0] === t.priorite; })[0] || ["", ""])[1] }),
       el("span", { classe: "pastille", texte: O.souplesse(t) }),
       el("span", { classe: "pastille", texte: O.frequence(t) }),
@@ -289,7 +292,7 @@
       etat.push(el("p", { classe: "limite", texte: "🔒 Date limite d'origine : " + E.format(dl) + (dl < auj ? " (dépassée)" : "") }));
     }
     if (t.derniere_realisation) etat.push(el("p", { classe: "discret", texte: "Dernière réalisation : " + O.dateLongue(t.derniere_realisation) }));
-    zone.appendChild(el("section", { classe: "carte etat" }, etat));
+    if (etat.length) zone.appendChild(el("section", { classe: "carte etat" }, etat));
 
     if (t.condition) zone.appendChild(el("p", { classe: "condition", texte: "👁 " + t.condition }));
 
@@ -309,7 +312,7 @@
     }
 
     // Préparation
-    if (t.preparation && t.etat !== "terminee") {
+    if (t.preparation && t.etat !== "terminee" && !reference) {
       var pj = parseInt(t.preparation_jours, 10) || 0;
       var e = E.jour(t.echeance);
       var lignesPrep = [
@@ -325,8 +328,8 @@
       zone.appendChild(el("section", { classe: "carte" + (prep && prep.groupe === "retard" ? " en-retard" : "") }, lignesPrep));
     }
 
-    // Boutons
-    if (t.etat !== "terminee") {
+    // Boutons (pas pour une fiche de référence : ni date ni rappel)
+    if (t.etat !== "terminee" && !reference) {
       zone.appendChild(el("div", { classe: "actions-principales" }, [
         el("button", { type: "button", classe: "bouton", texte: "✅ Fait", onclick: function () { fait(t, recharger); } }),
         el("button", { type: "button", classe: "bouton secondaire", texte: "📅 Reporter", onclick: function () { reporter(t, recharger); } }),
@@ -342,7 +345,7 @@
     });
 
     zone.appendChild(el("div", { classe: "actions-2" }, [
-      el("a", { classe: "bouton secondaire", href: "#/modifier/" + t.id, texte: "✏️ Modifier la tâche" }),
+      el("a", { classe: "bouton secondaire", href: "#/modifier/" + t.id, texte: "✏️ Modifier la fiche" }),
       el("button", { type: "button", classe: "bouton secondaire", texte: "📝 Ajouter une note", onclick: function () {
         simple(t, "note", "📝 Note", "Remarque gardée dans l'historique, sans changer l'échéance.", recharger);
       } }),
@@ -464,7 +467,7 @@
           el("button", { type: "button", classe: "lien", texte: "Supprimer", "aria-label": "Supprimer cette ligne de l'historique", onclick: function () {
             Dialogue.confirmer({
               titre: "Supprimer cette ligne ?",
-              texte: "La ligne et ses justificatifs seront effacés.\nL'échéance de la tâche ne change pas : corrigez-la avec « Modifier la tâche » si besoin.",
+              texte: "La ligne et ses justificatifs seront effacés.\nL'échéance de la tâche ne change pas : corrigez-la avec « Modifier la fiche » si besoin.",
               ok: "Supprimer", annuler: "Garder", danger: true,
             }).then(function (oui) {
               if (!oui) return;

@@ -6,7 +6,7 @@
 
   var E = window.Echeances;
   var el = O.el;
-  var VERSION_APPLI = "1.0.0";
+  var VERSION_APPLI = "1.1.0";
 
   function vue(zone) {
     O.titre("Réglages");
@@ -20,6 +20,7 @@
     ]).then(function (r) {
       O.vider(contenu);
       courriels(contenu, r[0].items[0] || null, r[1].items);
+      regles(contenu);
       domaines(contenu, r[3]);
       compte(contenu);
     }, function (e) {
@@ -86,6 +87,79 @@
       el("h3", { texte: "Derniers envois" }),
       journal,
     ]));
+  }
+
+  // ---------- règles de rappel (CDC 4.5) ----------
+
+  var NOMS_PRIORITE = { critique: "🔴 Critique", important: "🟠 Important", confort: "⚪ Confort" };
+
+  function regles(zone) {
+    var section = el("section", { classe: "carte" }, [el("h2", { texte: "🔔 Règles de rappel" }), O.attente()]);
+    zone.appendChild(section);
+    O.reglage(true).then(function (reglage) {
+      section.removeChild(section.lastChild);
+      var R = E.regles(reglage && reglage.regles);
+      var champs = {};
+      section.appendChild(el("p", { classe: "aide", texte: "Les trois priorités restent les mêmes ; vous réglez ici quand elles vous préviennent. Le résumé du lundi reprend toujours tout." }));
+      ["critique", "important", "confort"].forEach(function (p) {
+        var retard = el("input", { type: "number", inputmode: "numeric", min: "0", max: "30", valeur: String(R[p].retard) });
+        var matin = el("input", { type: "checkbox", coche: R[p].matin, id: "matin-" + p });
+        champs[p] = { retard: retard, matin: matin };
+        section.appendChild(el("div", { classe: "regle-priorite" }, [
+          el("h3", { texte: NOMS_PRIORITE[p] }),
+          O.champ("En retard : rappel tous les … jours", retard, "1 = chaque jour ; 3 = tous les 3 jours ; 0 = seulement dans le résumé du lundi."),
+          el("label", { classe: "case-ligne", "for": "matin-" + p }, [matin, " Premier rappel et jour J dans l'e-mail du matin (sinon : le lundi seulement)"]),
+        ]));
+      });
+      var avance = el("input", { type: "number", inputmode: "numeric", min: "1", max: "365", valeur: String(R.avance) });
+      var avanceAn = el("input", { type: "number", inputmode: "numeric", min: "1", max: "365", valeur: String(R.avance_annuelle) });
+      var tolerance = el("input", { type: "number", inputmode: "numeric", min: "0", max: "365", valeur: String(R.tolerance) });
+      var etat = el("p", { classe: "discret", "aria-live": "polite" });
+      var enregistrer = el("button", { type: "button", classe: "bouton", texte: "Enregistrer les règles" });
+      section.appendChild(el("h3", { texte: "Pour toutes les priorités" }));
+      section.appendChild(el("div", { classe: "champs" }, [
+        O.champ("Premier rappel, jours avant", avance),
+        O.champ("Tâche annuelle, jours avant", avanceAn),
+      ]));
+      section.appendChild(el("p", { classe: "aide", texte: "Une tâche peut avoir son propre premier rappel (ex. 90 jours pour une carte d'identité) : il passe avant ces valeurs." }));
+      section.appendChild(O.champ("Tolérance proposée pour une nouvelle tâche souple, en jours", tolerance));
+      section.appendChild(enregistrer);
+      section.appendChild(el("button", { type: "button", classe: "bouton secondaire", texte: "Revenir aux règles d'origine", onclick: function () {
+        var d = E.REGLES_DEFAUT;
+        ["critique", "important", "confort"].forEach(function (p) {
+          champs[p].retard.value = String(d[p].retard);
+          champs[p].matin.checked = d[p].matin;
+        });
+        avance.value = String(d.avance);
+        avanceAn.value = String(d.avance_annuelle);
+        tolerance.value = String(d.tolerance);
+        etat.textContent = "Valeurs d'origine remises : touchez « Enregistrer les règles » pour les garder.";
+      } }));
+      section.appendChild(etat);
+      enregistrer.addEventListener("click", function () {
+        var brut = { avance: avance.value, avance_annuelle: avanceAn.value, tolerance: tolerance.value };
+        ["critique", "important", "confort"].forEach(function (p) {
+          brut[p] = { retard: champs[p].retard.value, matin: champs[p].matin.checked };
+        });
+        var propres = E.regles(brut);
+        enregistrer.disabled = true;
+        O.reglage(true).then(function (r) {
+          var d = { regles: propres };
+          if (!r) d.adresse_site = window.location.origin;
+          return r ? Api.modifier("reglages", r.id, d) : Api.creer("reglages", d);
+        }).then(function () {
+          enregistrer.disabled = false;
+          O.oublierTout();
+          etat.textContent = "Règles enregistrées ✓ Elles s'appliquent dès le prochain e-mail du matin.";
+        }, function (e) {
+          enregistrer.disabled = false;
+          etat.textContent = "Non enregistrées : " + e.message;
+        });
+      });
+    }, function (e) {
+      section.removeChild(section.lastChild);
+      section.appendChild(O.erreur(e));
+    });
   }
 
   // ---------- domaines ----------

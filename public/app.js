@@ -2,7 +2,7 @@
 // e-mail), navigation, accueil « Aujourd'hui » et calendrier (CDC 3.1, 3.2).
 // Les autres écrans sont dans fiche.js, editeur.js et reglages.js.
 // Navigation par l'ancre de l'adresse : #/accueil, #/calendrier?m=2026-11,
-// #/tache/ID, #/modifier/ID, #/nouvelle, #/procedure/ID, #/reglages.
+// #/fiches, #/tache/ID, #/modifier/ID, #/nouvelle, #/procedure/ID, #/reglages.
 (function () {
   "use strict";
 
@@ -118,7 +118,7 @@
     enRetour = false;
     if (pile.length > 30) pile.shift();
     courante = window.location.hash || "#/accueil";
-    var onglet = { accueil: "accueil", calendrier: "calendrier", nouvelle: "nouvelle", reglages: "reglages" }[nom] || "";
+    var onglet = { accueil: "accueil", calendrier: "calendrier", fiches: "fiches", nouvelle: "fiches", reglages: "reglages" }[nom] || "";
     Array.prototype.forEach.call(document.querySelectorAll(".onglets a"), function (l) {
       if (l.getAttribute("data-onglet") === onglet) l.setAttribute("aria-current", "page");
       else l.removeAttribute("aria-current");
@@ -132,6 +132,7 @@
       var ecran = {
         accueil: accueil,
         calendrier: calendrier,
+        fiches: window.Repertoire && Repertoire.vue,
         tache: window.Fiche && Fiche.vue,
         modifier: window.Editeur && Editeur.tache,
         nouvelle: window.Editeur && Editeur.tache,
