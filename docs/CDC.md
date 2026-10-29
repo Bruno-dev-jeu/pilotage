@@ -1,8 +1,9 @@
 # Cahier des charges — Pilotage (échéances et entretien, tous domaines)
 
-Version 0.17 — 29/10/2026 · Validée par le propriétaire ; étapes 1, 2 et 3 installées (application 1.3.0) ; procédures informatiques chargées ; rotation des disques du PC ajoutée
+Version 0.18 — 29/10/2026 · Validée par le propriétaire ; étapes 1, 2 et 3 installées (application 1.3.0) ; procédures informatiques chargées ; rotation des disques du PC ajoutée ; Pièces euro ajouté aux contrôles de la nuit
 
 **Historique des versions**
+- Version 0.18 (29/10/2026) : **nouveau projet Pièces euro** (`C:\Dev\pieces-euro`, pieces-euro.bmlab.fr, PocketBase `pocketbase-pieces` port 8097) **ajouté aux contrôles de la nuit** (`controles_nuit.py`) : site et certificat (liste `SITES`), sauvegarde PocketBase et copie chiffrée sur Shadow Drive (liste `SAUVEGARDES`, état `/var/lib/sauvegarde-pieces/etat`, script `sauvegarde_pieces.sh` à 3 h 55) ; le service `pocketbase-pieces` est repris tout seul par le contrôle « Services ». Nouveau contrôle **« robots de nuit »** (liste `ROBOTS`) pour les services lancés par un minuteur, invisibles du contrôle « Services » : `pieces-robot` (1 h 30) ; 🔴 si son minuteur ne tourne pas, si son dernier passage a fini en erreur (code de sortie non nul) ou s'il date de plus de 48 h ; ℹ️ s'il n'est pas encore passé depuis un redémarrage du serveur. Script à déployer seulement une fois Pièces euro installé sur le serveur (sinon fausses alertes). Sécurité : sans objet (lecture seule de l'état systemd et des sauvegardes, aucun secret ajouté).
 - Version 0.17 (29/10/2026) : **rotation des disques de sauvegarde du PC**, à la demande du propriétaire : nouvelle tâche « Échanger le disque de sauvegarde du PC (mois pairs / mois impairs) » (domaine PC et sauvegardes, 🟠, à dates fixes « 31 » = dernier jour de chaque mois, souple ± 1 jour, premier rappel 2 jours avant, préparation « rapporter de l'autre lieu le disque du mois qui commence » 3 jours avant, première échéance le 31/10/2026) et sa procédure en 7 étapes, tirées de la documentation de sauvegarde du PC (§ 8 : SAV_PC_MOIS_IMPAIRS = Seagate, SAV_PC_MOIS_PAIRS = Sabrent, lettre D, éjection forcée par Stop-Service VeeamEndpointBackupSvc et fsutil volume dismount D:). Migration `1810800000_rotation_disques.js`, créée une seule fois, essayée sur la base locale. Sécurité : sans objet.
 - Version 0.16 (29/10/2026) : **procédures informatiques écrites** (CDC 3.4), à la demande du propriétaire, chargées par la migration `1810700000_procedures_informatiques.js` dans les fiches qui n'ont encore aucune étape (une procédure déjà écrite n'est jamais touchée) : mises à jour du système (9 étapes), revue de sécurité trimestrielle (7), montée de version de PocketBase et de Caddy (12, avec retour en arrière), test de restauration d'une sauvegarde de site (8), test de restauration de la sauvegarde du PC (5), renouvellement des secrets (7), renouvellement du nom de domaine (5), ménage RGPD dans Gmail (5), vérification des liens de psv (4), tarifs de la saison (5 pour l'hiver, 5 pour l'été). Commandes alignées sur l'état réel du 29/10/2026 (serveur bmlab, 5 PocketBase, Caddy bloqué dans apt). Titres mis à jour : plus de jeton Infomaniak dans le renouvellement des secrets, jardin au lieu d'une « sandbox » inexistante dans la montée de version. Essayé sur la base locale (bon nombre d'étapes par fiche, migration rejouée sans doublon). Sécurité : aucun secret dans les procédures ; elles disent seulement où les trouver.
 - Version 0.15 (29/10/2026) : **étape 3 installée** : migration et règles déployées, version 1.3.0 en ligne (fausse adresse d'agenda refusée, 404, vérifié depuis Internet) ; clé Healthchecks.io en lecture seule saisie par le propriétaire, vérification immédiate réussie (« la sauvegarde a signalé sa réussite cette nuit ») ; abonnement de l'agenda fait sur l'iPhone et l'iPad. Remarque d'installation : sur le PC, l'ancienne page restait affichée tant qu'elle n'était pas rechargée (Ctrl + F5). **Les trois étapes du chapitre 10 sont installées.** Sécurité : sans objet (installation de la version 0.14).
@@ -148,7 +149,7 @@ Chaque nuit à 5 h, un script du serveur (`controles_nuit.sh`, lancé par system
 ### 5.1 Contrôles
 | Contrôle | Alerte si |
 |---|---|
-| Sites en ligne : psv, vitrine, immat, courses, pilotage | un site ne répond pas |
+| Sites en ligne : psv, vitrine, immat, courses, pilotage, jardin, pièces euro | un site ne répond pas |
 | Certificats HTTPS de chaque site | moins de 20 jours avant la fin |
 | Sauvegarde du jour de chaque projet (sur le serveur et sur le Shadow Drive) | plus de 2 jours sans sauvegarde, ou taille anormale (moitié de la veille) |
 | Espace disque du serveur | moins de 20 % libre |
@@ -156,6 +157,7 @@ Chaque nuit à 5 h, un script du serveur (`controles_nuit.sh`, lancé par system
 | Redémarrage demandé par le système (nouveau noyau) | depuis plus de 7 jours |
 | Nouvelle version de PocketBase ou de Caddy | si elle corrige une faille : tâche 🔴 créée ; sinon notée pour la revue trimestrielle |
 | Services du serveur (Caddy, chaque PocketBase) | un service arrêté ou redémarré plusieurs fois dans la nuit |
+| Robots de nuit lancés par un minuteur (Pièces euro, 1 h 30) | minuteur arrêté, dernier passage en erreur ou vieux de plus de 2 jours |
 | Rapport de sauvegarde du PC (étape 3) | pas de rapport depuis 2 jours |
 
 ### 5.2 Actions faites toutes seules

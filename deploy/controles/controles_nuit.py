@@ -3,8 +3,8 @@
 # Emplacement sur le serveur : /usr/local/bin/controles_nuit.py, lancé chaque
 # nuit à 5 h (heure de Paris) par pilotage-controles.timer, en tant que root.
 #
-# Vérifie ce qui peut l'être (sites, certificats, sauvegardes, disque, mises à
-# jour, redémarrage, services, versions), fait un petit ménage sans risque
+# Vérifie ce qui peut l'être (sites, certificats, sauvegardes, robots, disque,
+# mises à jour, redémarrage, services, versions), fait un petit ménage sans risque
 # (journaux de plus de 14 jours, cache des paquets), puis envoie au Pilotage
 # un compte rendu EN CLAIR pour chaque contrôle :
 #   POST http://127.0.0.1:8095/api/pilotage/controles (jamais par Internet),
@@ -47,6 +47,7 @@ SITES = [
     ("courses.bmlab.fr", "Courses"),
     ("pilotage.bmlab.fr", "Pilotage"),
     ("jardin.bmlab.fr", "Jardin"),
+    ("pieces-euro.bmlab.fr", "Pièces euro"),
 ]
 
 # clé, nom, dossier des sauvegardes PocketBase, état de la copie Shadow Drive
@@ -55,6 +56,13 @@ SAUVEGARDES = [
     ("courses", "Courses", "/opt/pocketbase-courses/pb_data/backups", "/var/lib/sauvegarde-courses/etat"),
     ("pilotage", "Pilotage", "/opt/pocketbase-pilotage/pb_data/backups", "/var/lib/sauvegarde-pilotage/etat"),
     ("jardin", "Jardin", "/opt/pocketbase-jardin/pb_data/backups", "/var/lib/sauvegarde-jardin/etat"),
+    ("pieces", "Pièces euro", "/opt/pocketbase-pieces/pb_data/backups", "/var/lib/sauvegarde-pieces/etat"),
+]
+
+# robots lancés par un minuteur systemd (service sans [Install], donc absent
+# du contrôle « Services ») : nom du service, nom en clair, heure de passage
+ROBOTS = [
+    ("pieces-robot", "Robot de nuit de Pièces euro", "1 h 30"),
 ]
 
 URL_PILOTAGE = "http://127.0.0.1:8095/api/pilotage/controles"
@@ -344,6 +352,37 @@ def services():
                 "Les %d services tournent normalement (%s). Rien à faire." % (len(noms), ", ".join(n.replace(".service", "") for n in noms)))
 
 
+def robot(service, nom, heure):
+    def verifier():
+        def valeur(unite, propriete):
+            return commande(["systemctl", "show", "-p", propriete, "--value", unite])[1].strip()
+        if valeur(service + ".timer", "ActiveState") != "active":
+            ajouter(service, nom, "alerte",
+                    "Son minuteur (%s.timer) ne tourne pas : le robot ne passe plus chaque nuit à %s. "
+                    "Commande à passer : sudo systemctl enable --now %s.timer. Une tâche de réparation a été créée." % (service, heure, service))
+            return
+        fin = int(valeur(service + ".service", "ExecMainExitTimestampMonotonic") or 0)
+        with open("/proc/uptime", encoding="utf-8") as f:
+            depuis_demarrage = float(f.read().split()[0])
+        if fin == 0:
+            ajouter(service, nom, "info",
+                    "Pas encore passé depuis le dernier démarrage du serveur (il y a %d h) : prochain passage à %s. Rien à faire." % (depuis_demarrage // 3600, heure))
+            return
+        passage = time.time() - (depuis_demarrage - fin / 1e6)
+        code = valeur(service + ".service", "ExecMainStatus")
+        if valeur(service + ".service", "Result") != "success" or code not in ("", "0"):
+            ajouter(service, nom, "alerte",
+                    "Son dernier passage (%s) s'est terminé en erreur (code %s). Détail : sudo journalctl -u %s -n 30 --no-pager. "
+                    "Une tâche de réparation a été créée." % (quand(passage), code or "inconnu", service))
+        elif time.time() - passage > 48 * 3600:
+            ajouter(service, nom, "alerte",
+                    "Dernier passage : %s, alors qu'il doit passer chaque nuit à %s. Une tâche de réparation a été créée." % (quand(passage), heure))
+        else:
+            ajouter(service, nom, "ok", "Passé %s sans erreur. Rien à faire." % quand(passage))
+    verifier.__name__ = "robot_" + service.replace("-", "_")
+    return verifier
+
+
 def derniere_version(depot):
     req = urllib.request.Request("https://api.github.com/repos/%s/releases/latest" % depot,
                                  headers={"Accept": "application/vnd.github+json", "User-Agent": "pilotage-controles"})
@@ -427,7 +466,7 @@ def signal_de_vie(echec):
 def main():
     essai = "--essai" in sys.argv
     nuit = maintenant().strftime("%Y-%m-%d")
-    for c in [sites_en_ligne, certificats] + [sauvegarde(*s) for s in SAUVEGARDES] + [
+    for c in [sites_en_ligne, certificats] + [sauvegarde(*s) for s in SAUVEGARDES] + [robot(*r) for r in ROBOTS] + [
             immatriculation, disque, medias_pilotage, mises_a_jour, redemarrage, services, versions]:
         controle(c)
     if not essai:
