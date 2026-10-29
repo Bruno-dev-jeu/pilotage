@@ -190,7 +190,7 @@
   }
 
   function accueil(zone) {
-    O.titre("Aujourd'hui");
+    O.titre("Accueil");
     var auj = E.aujourdhui();
     var choixF = O.choixDomaine(O.filtre(), true);
     choixF.setAttribute("aria-label", "Domaine affiché");

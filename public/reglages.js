@@ -6,7 +6,7 @@
 
   var E = window.Echeances;
   var el = O.el;
-  var VERSION_APPLI = "1.2.0";
+  var VERSION_APPLI = "1.2.1";
 
   function vue(zone) {
     O.titre("Réglages");
