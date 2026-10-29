@@ -31,9 +31,11 @@ pilotage.bmlab.fr {
         # (photos, vidéos, justificatifs : jeton requis), route d'essai de
         # l'e-mail. Jamais la console d'administration ni l'API superuser
         # (tunnel SSH seulement).
+        # La route des contrôles de la nuit n'est jamais exposée : le script
+        # du serveur l'appelle directement sur 127.0.0.1:8095.
         @api {
             path /api/health /api/collections/* /api/files/* /api/pilotage/*
-            not path /api/collections/_superusers/*
+            not path /api/collections/_superusers/* /api/pilotage/controles
         }
         reverse_proxy @api 127.0.0.1:8095
 

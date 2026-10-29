@@ -133,6 +133,7 @@
         accueil: accueil,
         calendrier: calendrier,
         fiches: window.Repertoire && Repertoire.vue,
+        controles: window.Controles && Controles.vue,
         tache: window.Fiche && Fiche.vue,
         modifier: window.Editeur && Editeur.tache,
         nouvelle: window.Editeur && Editeur.tache,
@@ -196,6 +197,9 @@
     var contenu = el("div", {}, [O.attente()]);
     var dernierEnvoi = el("p", { classe: "discret petit-texte" });
     zone.appendChild(el("p", { classe: "date-du-jour", texte: O.dateLongue(auj).replace(/^./, function (c) { return c.toUpperCase(); }) }));
+    var blocControles = el("div");
+    zone.appendChild(blocControles);
+    if (window.Controles) Controles.ligneAccueil(blocControles);
     zone.appendChild(el("div", { classe: "filtre" }, [choixF]));
     zone.appendChild(contenu);
     zone.appendChild(dernierEnvoi);

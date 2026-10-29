@@ -56,6 +56,7 @@
       rappel_jours: nombre(t.rappel_jours),
       preparation: el("input", { type: "text", maxlength: "300", valeur: t.preparation, placeholder: "Ex. Appeler le paysagiste pour fixer la date" }),
       preparation_jours: nombre(t.preparation_jours),
+      alerte_gel: el("input", { type: "checkbox", coche: t.alerte_gel, id: "alerte-gel" }),
       condition: el("input", { type: "text", maxlength: "300", valeur: t.condition, placeholder: "Ex. Quand l'eau est autour de 12 °C" }),
       derniere_realisation: el("input", { type: "date", valeur: E.jour(t.derniere_realisation) }),
       materiel: el("textarea", { rows: "3", maxlength: "2000", valeur: t.materiel }),
@@ -109,6 +110,7 @@
       el("h3", { texte: "Préparation à l'avance (facultatif)" }),
       O.champ("Ce qu'il faut faire à l'avance", f.preparation),
       O.champ("Combien de jours avant", f.preparation_jours, "Ex. 60 pour réserver un artisan, 30 pour un rendez-vous."),
+      el("label", { classe: "case-ligne", "for": "alerte-gel" }, [f.alerte_gel, " ❄️ Prévenir dans l'e-mail du matin quand le gel est annoncé à la maison (commune des Réglages), tant que la tâche n'est pas faite. Ex. hiverner la piscine."]),
     ].forEach(function (n) { blocEcheance.appendChild(n); });
     majVisibles();
     zone.appendChild(el("div", { classe: "formulaire" }, [
@@ -138,6 +140,7 @@
         preparation_jours: parseInt(f.preparation_jours.value, 10) || 0, condition: f.condition.value.trim(),
         derniere_realisation: O.dateBase(f.derniere_realisation.value), materiel: f.materiel.value.trim(),
         contacts: f.contacts.value.trim(), notes: f.notes.value.trim(),
+        alerte_gel: f.mode.value !== "reference" && f.alerte_gel.checked,
       };
       // Fiche de référence : aucune date, aucun rappel.
       if (d.mode === "reference") {

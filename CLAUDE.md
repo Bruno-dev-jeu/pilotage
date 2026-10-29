@@ -4,11 +4,12 @@ Application web privée prévue sur `https://pilotage.bmlab.fr` : tout ce que le
 
 **Projet « chapeau », totalement séparé** des autres projets : site de l'appartement (`C:\Dev\site-accueil-appartement`, psv.bmlab.fr), jeu Immatriculation (`C:\Dev\immatriculation`), Courses (`C:\Dev\courses`). Son propre dépôt, sa propre PocketBase (service `pocketbase-pilotage`, port 8095, `/opt/pocketbase-pilotage`), son propre dossier web (`/var/www/pilotage-bmlab`), son propre bloc Caddy (`/etc/caddy/pilotage.caddy`). Il peut *lire* la documentation des autres projets pour en tirer les tâches, mais ne modifie jamais leurs fichiers ni leurs bases.
 
-`docs/CDC.md` est la **source de vérité vivante** (historique des versions en tête, chapitre 12 « État réel »). État au 28/10/2026 : version 0.9 ; étape 1 installée ; application 1.1.0 (fiches de référence, onglet « Fiches », règles de rappel réglables) construite, à installer. Le tenir à jour dans le même travail que le code.
+`docs/CDC.md` est la **source de vérité vivante** (historique des versions en tête, chapitre 12 « État réel »). État au 29/10/2026 : version 0.10 ; application 1.1.0 installée ; étape 2 (contrôles de la nuit, application 1.2.0) construite, à installer (`deploy/INSTALLATION.md`, « Étape 2 »). Le tenir à jour dans le même travail que le code.
 
 ## Structure
 - `public/` : l'application (HTML/CSS/JS sans framework ni build, servie telle quelle), comme Courses.
 - `public/echeances.js` : **tous les calculs de dates**, utilisé par les pages *et* par le serveur : à chaque changement, l'envoyer aussi dans `/opt/pocketbase-pilotage/pb_hooks/` puis redémarrer `pocketbase-pilotage`. Essai rapide : `node` avec quelques `assert` (voir l'historique du CDC 0.4).
+- `deploy/controles/` : script des contrôles de la nuit (`controles_nuit.py`, root, minuteur systemd à 5 h), réglage des mises à jour de sécurité automatiques. Liste des sites et des sauvegardes surveillés en tête du script : la tenir à jour quand un projet arrive.
 - `deploy/` : service systemd, bloc Caddy, sauvegarde, migrations (`pb_migrations/`), règles du serveur (`pb_hooks/` : `pilotage.pb.js` + `pilotage.js` ; rien de déclaré en haut d'un `.pb.js`, tout par `require()`).
 
 ## Conventions (communes aux projets du propriétaire)

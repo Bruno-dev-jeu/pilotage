@@ -1,0 +1,18 @@
+// Mises à jour automatiques du serveur (CDC Pilotage 5.2), à installer dans
+// /etc/apt/apt.conf.d/52pilotage-unattended-upgrades.
+// Seulement les corrections de SÉCURITÉ de Debian. Jamais Caddy (bloqué par
+// apt-mark hold : incident du 23/10/2026) ; les PocketBase ne viennent pas
+// d'apt. Pas de redémarrage automatique : les contrôles de la nuit
+// signalent quand il en faut un.
+Unattended-Upgrade::Origins-Pattern {
+        "origin=Debian,codename=${distro_codename}-security,label=Debian-Security";
+        "origin=Debian,codename=${distro_codename},label=Debian-Security";
+};
+Unattended-Upgrade::Package-Blacklist {
+        "caddy";
+};
+Unattended-Upgrade::Automatic-Reboot "false";
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+Unattended-Upgrade::Remove-Unused-Dependencies "false";
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";

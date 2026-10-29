@@ -277,6 +277,8 @@
       el("span", { classe: "pastille " + t.priorite, texte: (O.PRIORITES.filter(function (p) { return p[0] === t.priorite; })[0] || ["", ""])[1] }),
       el("span", { classe: "pastille", texte: O.souplesse(t) }),
       el("span", { classe: "pastille", texte: O.frequence(t) }),
+      t.alerte_gel ? el("span", { classe: "pastille", texte: "❄️ Alerte gel" }) : null,
+      t.origine ? el("span", { classe: "pastille", texte: "🛡️ Créée par les contrôles de la nuit" }) : null,
     ]));
 
     // État

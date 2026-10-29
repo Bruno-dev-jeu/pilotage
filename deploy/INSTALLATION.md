@@ -137,3 +137,69 @@ Attendu : `crontab -l` montre les lignes de PSV, de Courses **et** la nouvelle ;
 Pages : `scp` des fichiers de `public\` changés vers `/tmp/`, puis `sudo mv /tmp/… /var/www/pilotage-bmlab/`.
 Si `echeances.js` change : le copier **aussi** dans `/opt/pocketbase-pilotage/pb_hooks/`, puis `sudo systemctl restart pocketbase-pilotage`.
 Règles du serveur (`pb_hooks`) ou migrations : `sudo mv` dans le bon dossier, `sudo chown pocketbase-pilotage:pocketbase-pilotage …`, puis `sudo systemctl restart pocketbase-pilotage`.
+
+# Étape 2 : contrôles de la nuit (CDC chapitre 5)
+
+## A. Fichiers (PC)
+
+```
+cd C:\Dev\pilotage; git pull; scp deploy\pb_migrations\1810500000_controles.js deploy\pb_hooks\pilotage.pb.js deploy\pb_hooks\pilotage.js deploy\pilotage.caddy deploy\controles\controles_nuit.py deploy\controles\pilotage-controles.service deploy\controles\pilotage-controles.timer deploy\controles\52pilotage-unattended-upgrades public\index.html public\style.css public\app.js public\fiche.js public\editeur.js public\reglages.js public\controles.js bmlab:/tmp/
+```
+
+## B. Serveur : le Pilotage (règles, base, pages, Caddy)
+
+```
+sudo mv /tmp/1810500000_controles.js /opt/pocketbase-pilotage/pb_migrations/
+sudo mv /tmp/pilotage.pb.js /tmp/pilotage.js /opt/pocketbase-pilotage/pb_hooks/
+sudo chown -R pocketbase-pilotage:pocketbase-pilotage /opt/pocketbase-pilotage/pb_hooks /opt/pocketbase-pilotage/pb_migrations
+sudo systemctl restart pocketbase-pilotage; sleep 3; systemctl is-active pocketbase-pilotage
+sudo mv /tmp/index.html /tmp/style.css /tmp/app.js /tmp/fiche.js /tmp/editeur.js /tmp/reglages.js /tmp/controles.js /var/www/pilotage-bmlab/
+sudo cp /etc/caddy/pilotage.caddy /etc/caddy/pilotage.caddy.avant-controles
+sudo mv /tmp/pilotage.caddy /etc/caddy/pilotage.caddy
+sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile && sudo systemctl reload caddy
+```
+Contrôle : `curl -s -o /dev/null -w "%{http_code}\n" -X POST https://pilotage.bmlab.fr/api/pilotage/controles` doit répondre **404** (la route n'est jamais ouverte sur Internet).
+
+## C. Serveur : le secret partagé entre le script et le Pilotage
+
+Fabriqué sur le serveur, jamais affiché ni copié ailleurs :
+```
+sudo mkdir -p /etc/pilotage
+sudo sh -c 'openssl rand -hex 32 > /etc/pilotage/secret'
+sudo chown root:pocketbase-pilotage /etc/pilotage /etc/pilotage/secret
+sudo chmod 750 /etc/pilotage; sudo chmod 640 /etc/pilotage/secret
+```
+
+## D. Serveur : mises à jour de sécurité automatiques
+
+```
+sudo apt-get install -y unattended-upgrades
+sudo mv /tmp/52pilotage-unattended-upgrades /etc/apt/apt.conf.d/52pilotage-unattended-upgrades
+sudo chown root:root /etc/apt/apt.conf.d/52pilotage-unattended-upgrades
+apt-mark showhold
+sudo unattended-upgrade --dry-run 2>&1 | tail -5
+```
+Attendu : `apt-mark showhold` affiche `caddy` ; l'essai à blanc ne signale pas d'erreur.
+
+## E. Serveur : le script et son minuteur
+
+```
+sudo mv /tmp/controles_nuit.py /usr/local/bin/controles_nuit.py
+sudo chown root:root /usr/local/bin/controles_nuit.py; sudo chmod 755 /usr/local/bin/controles_nuit.py
+sudo mv /tmp/pilotage-controles.service /tmp/pilotage-controles.timer /etc/systemd/system/
+sudo chown root:root /etc/systemd/system/pilotage-controles.*
+sudo systemctl daemon-reload
+sudo /usr/local/bin/controles_nuit.py --essai | head -40
+```
+L'essai affiche les comptes rendus sans rien envoyer. Puis un vrai passage, et le minuteur :
+```
+sudo systemctl start pilotage-controles.service; tail -1 /var/log/pilotage-controles.log
+sudo systemctl enable --now pilotage-controles.timer; systemctl list-timers pilotage-controles.timer --no-pager
+```
+Attendu : `envoyé : {'enregistres': …}` ; dans l'application, accueil : ligne « Cette nuit : … », écran Contrôles.
+
+## F. Surveillance externe (comptes du propriétaire)
+
+- **Healthchecks.io** (compte existant) : créer deux contrôles, « Pilotage contrôles de la nuit » (période 1 jour, grâce 2 heures) et « Pilotage e-mail du matin » (période 1 jour, grâce 2 heures). Adresse du premier dans `/etc/pilotage/healthchecks-controles` (`echo 'https://hc-ping.com/…' | sudo tee /etc/pilotage/healthchecks-controles`) ; adresse du second dans l'application, Réglages > Surveillance et gel.
+- **UptimeRobot** (compte existant, déjà psv) : ajouter une sonde HTTPS par site manquant : pilotage, courses, jardin, immat, hameau-ecrins-405.
+- **Commune** pour l'alerte de gel : Réglages > Surveillance et gel.

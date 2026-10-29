@@ -1,0 +1,12 @@
+# Chaque nuit à 5 h, heure de Paris (deux heures avant l'e-mail du matin).
+# Persistent : si le serveur était éteint à 5 h, le contrôle part au démarrage.
+[Unit]
+Description=Pilotage - contrôles de la nuit à 5 h
+
+[Timer]
+OnCalendar=*-*-* 05:00:00 Europe/Paris
+Persistent=true
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target

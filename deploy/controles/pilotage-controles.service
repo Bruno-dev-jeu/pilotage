@@ -1,0 +1,22 @@
+# Contrôles de la nuit du Pilotage (CDC chapitre 5), lancés par
+# pilotage-controles.timer. À installer dans /etc/systemd/system/.
+# root : lecture des journaux et des sauvegardes de tous les projets, ménage
+# des journaux ; aucune écriture dans les dossiers des projets.
+[Unit]
+Description=Pilotage - contrôles de la nuit
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/bin/controles_nuit.py
+TimeoutStartSec=15min
+Nice=10
+# Durcissement : rien dans /home, pas de nouveaux privilèges ; écritures
+# limitées à son état, son journal, aux journaux du système et au cache apt.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/pilotage-controles /var/log /var/cache/apt /var/lib/apt
+StateDirectory=pilotage-controles

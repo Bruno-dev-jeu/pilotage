@@ -6,7 +6,7 @@
 
   var E = window.Echeances;
   var el = O.el;
-  var VERSION_APPLI = "1.1.0";
+  var VERSION_APPLI = "1.2.0";
 
   function vue(zone) {
     O.titre("Réglages");
@@ -21,6 +21,7 @@
       O.vider(contenu);
       courriels(contenu, r[0].items[0] || null, r[1].items);
       regles(contenu);
+      surveillance(contenu);
       domaines(contenu, r[3]);
       compte(contenu);
     }, function (e) {
@@ -92,6 +93,52 @@
   // ---------- règles de rappel (CDC 4.5) ----------
 
   var NOMS_PRIORITE = { critique: "🔴 Critique", important: "🟠 Important", confort: "⚪ Confort" };
+
+  // ---------- surveillance et gel (CDC 4.4, 5 et 7) ----------
+
+  function surveillance(zone) {
+    var section = el("section", { classe: "carte" }, [el("h2", { texte: "🛡️ Surveillance et gel" }), O.attente()]);
+    zone.appendChild(section);
+    O.reglage(true).then(function (r) {
+      section.removeChild(section.lastChild);
+      var commune = el("input", { type: "text", maxlength: "100", valeur: r ? r.commune : "", placeholder: "Ex. Rognac 13340" });
+      var ping = el("input", { type: "url", valeur: r ? r.ping_courriel : "", placeholder: "https://hc-ping.com/…", autocapitalize: "off", spellcheck: "false" });
+      var etat = el("p", { classe: "discret", "aria-live": "polite" });
+      var lieu = r && r.meteo && r.meteo.nom && r.meteo.commune === r.commune ? "Commune trouvée : " + r.meteo.nom + "." : "";
+      var enregistrer = el("button", { type: "button", classe: "bouton", texte: "Enregistrer" });
+      enregistrer.addEventListener("click", function () {
+        var p = ping.value.trim();
+        if (p && p.indexOf("https://") !== 0) {
+          etat.textContent = "L'adresse du signal de vie doit commencer par https://";
+          return;
+        }
+        enregistrer.disabled = true;
+        O.reglage(true).then(function (x) {
+          var d = { commune: commune.value.trim().replace(/\s+/g, " "), ping_courriel: p };
+          if (!x) d.adresse_site = window.location.origin;
+          return x ? Api.modifier("reglages", x.id, d) : Api.creer("reglages", d);
+        }).then(function () {
+          enregistrer.disabled = false;
+          O.oublierTout();
+          etat.textContent = "Enregistré ✓ La commune sera cherchée au prochain e-mail du matin.";
+        }, function (e) {
+          enregistrer.disabled = false;
+          etat.textContent = "Non enregistré : " + e.message;
+        });
+      });
+      [
+        el("p", { classe: "aide", texte: "Les contrôles de la nuit (5 h) écrivent leurs comptes rendus dans l'écran « Contrôles », lien en haut de l'accueil." }),
+        O.champ("Commune de la maison, pour l'alerte de gel", commune, "Nom et code postal, jamais l'adresse. Prévisions Open-Meteo, sans compte. " + lieu),
+        O.champ("Signal de vie de l'e-mail du matin (Healthchecks.io)", ping, "Adresse « ping URL » du contrôle Healthchecks.io : si l'e-mail du matin ne part pas, Healthchecks.io vous prévient."),
+        enregistrer,
+        el("a", { classe: "bouton secondaire", href: "#/controles", texte: "🛡️ Voir les contrôles de la nuit" }),
+        etat,
+      ].forEach(function (n) { section.appendChild(n); });
+    }, function (e) {
+      section.removeChild(section.lastChild);
+      section.appendChild(O.erreur(e));
+    });
+  }
 
   function regles(zone) {
     var section = el("section", { classe: "carte" }, [el("h2", { texte: "🔔 Règles de rappel" }), O.attente()]);

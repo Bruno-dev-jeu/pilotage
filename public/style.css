@@ -287,3 +287,15 @@ video { width: 100%; max-height: 60vh; border-radius: 10px; background: #000; ma
   .actions-principales { grid-template-columns: repeat(3, 1fr); }
   .jour { min-height: 64px; }
 }
+
+/* Contrôles de la nuit (controles.js) */
+.ligne-controles {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 8px;
+  padding: 8px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--bord);
+  text-decoration: none; font-size: .92rem;
+}
+.ligne-controles.a-regarder { background: var(--orange-fond); border-color: var(--alerte-bord); font-weight: 600; }
+.controle h3 { margin: 0 0 4px; }
+.controle.alerte { border-left: 5px solid var(--rouge); }
+.controle.attention { border-left: 5px solid var(--alerte-bord); }
+.controle.ok, .controle.info { border-left: 5px solid var(--bord); }

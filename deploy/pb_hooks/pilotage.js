@@ -15,6 +15,7 @@ function versObjet(r) {
   CHAMPS_DATE.forEach((k) => { o[k] = E.jour(r.getString(k)) })
   CHAMPS_NOMBRE.forEach((k) => { o[k] = r.getInt(k) })
   o.preparation_faite = r.getBool("preparation_faite")
+  o.alerte_gel = r.getBool("alerte_gel")
   return o
 }
 
@@ -122,12 +123,21 @@ function reglages(app) {
       } catch (err) {
         regles = null
       }
-      return { email: r[0].getString("email_rappels"), site: r[0].getString("adresse_site") || "https://pilotage.bmlab.fr", regles: E.regles(regles) }
+      let meteo = null
+      try {
+        meteo = JSON.parse(r[0].getString("meteo") || "null")
+      } catch (err) {
+        meteo = null
+      }
+      return {
+        id: r[0].id, email: r[0].getString("email_rappels"), site: r[0].getString("adresse_site") || "https://pilotage.bmlab.fr",
+        regles: E.regles(regles), commune: r[0].getString("commune").trim(), meteo: meteo, ping: r[0].getString("ping_courriel"),
+      }
     }
   } catch (err) {
     // pas encore de réglages
   }
-  return { email: "", site: "https://pilotage.bmlab.fr", regles: E.regles(null) }
+  return { id: "", email: "", site: "https://pilotage.bmlab.fr", regles: E.regles(null), commune: "", meteo: null, ping: "" }
 }
 
 function ligne(el, auj, site) {
@@ -156,27 +166,138 @@ function texteLigne(el, auj) {
   return "- " + PASTILLE[t.priorite] + " " + nom + " — " + t.domaineNom + " — " + E.libelle(el, auj)
 }
 
-// Construit l'e-mail. Rend null s'il n'y a rien à envoyer (sauf lundi et essai).
+// ---------- contrôles de la nuit (CDC 5) ----------
+
+const STATUT = { ok: "✅", info: "ℹ️", attention: "🟠", alerte: "🔴" }
+const RANG_STATUT = { alerte: 0, attention: 1, info: 2, ok: 3 }
+
+// Comptes rendus d'une nuit, les plus graves d'abord.
+function controlesDe(app, nuit) {
+  const liste = []
+  app.findRecordsByFilter("controles", "nuit = {:n}", "", 200, 0, { n: nuit }).forEach((c) => {
+    liste.push({ cle: c.getString("cle"), titre: c.getString("titre"), statut: c.getString("statut"), texte: c.getString("texte") })
+  })
+  liste.sort((a, b) => (RANG_STATUT[a.statut] - RANG_STATUT[b.statut]) || (a.titre < b.titre ? -1 : 1))
+  return liste
+}
+
+function resumeControles(liste) {
+  if (!liste.length) return "⚠️ Aucun compte rendu des contrôles cette nuit : le script de contrôle n'a pas tourné ou n'a pas pu écrire."
+  const aRegarder = liste.filter((c) => c.statut === "alerte" || c.statut === "attention").length
+  return aRegarder
+    ? "Cette nuit : " + liste.length + " contrôles, " + aRegarder + " point" + (aRegarder > 1 ? "s" : "") + " à regarder."
+    : "✅ Cette nuit : " + liste.length + " contrôles, tout va bien."
+}
+
+function texteHtml(t) {
+  return echapper(t).split("\n").join("<br>")
+}
+
+// ---------- gel annoncé (CDC 4.4) ----------
+
+function trouverCommune(app, r) {
+  const m = r.commune.match(/\b(\d{5})\b/)
+  const cp = m ? m[1] : ""
+  const nom = r.commune.replace(/\b\d{5}\b/, "").trim()
+  if (!nom) return null
+  if (r.meteo && r.meteo.commune === r.commune && r.meteo.lat) return r.meteo
+  const res = $http.send({
+    url: "https://geocoding-api.open-meteo.com/v1/search?count=10&language=fr&format=json&countryCode=FR&name=" + encodeURIComponent(nom),
+    method: "GET", timeout: 15,
+  })
+  const l = (res.statusCode === 200 && res.json && res.json.results) || []
+  const choix = l.filter((x) => cp && x.postcodes && x.postcodes.indexOf(cp) >= 0)[0] || l[0]
+  if (!choix) return null
+  const meteo = { commune: r.commune, nom: choix.name, lat: choix.latitude, lon: choix.longitude }
+  if (r.id) {
+    const rec = app.findRecordById("reglages", r.id)
+    rec.set("meteo", meteo)
+    app.save(rec)
+  }
+  return meteo
+}
+
+const JOURS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."]
+
+// Gel annoncé dans les 7 jours, et tâches concernées encore à faire.
+function gelAnnonce(app, r, taches, auj) {
+  const concernees = taches.filter((t) => t.alerte_gel && t.etat !== "terminee" && t.mode !== "reference" &&
+    (!t.echeance || E.ecart(auj, t.echeance) <= 60))
+  if (!concernees.length || !r.commune) return null
+  try {
+    const lieu = trouverCommune(app, r)
+    if (!lieu) return { erreur: "Commune « " + r.commune + " » introuvable pour l'alerte de gel : corrigez-la dans les réglages." }
+    const res = $http.send({
+      url: "https://api.open-meteo.com/v1/forecast?daily=temperature_2m_min&timezone=Europe%2FParis&forecast_days=7&latitude=" + lieu.lat + "&longitude=" + lieu.lon,
+      method: "GET", timeout: 15,
+    })
+    const d = res.statusCode === 200 && res.json && res.json.daily
+    if (!d) return null
+    const jours = []
+    for (let i = 0; i < d.time.length; i++) {
+      if (d.temperature_2m_min[i] !== null && d.temperature_2m_min[i] <= 0) {
+        const p = d.time[i].split("-")
+        const js = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])).getUTCDay()
+        jours.push(JOURS[js] + " " + E.format(d.time[i], true) + " (" + String(d.temperature_2m_min[i]).replace(".", ",") + " °C)")
+      }
+    }
+    if (!jours.length) return null
+    return { lieu: lieu.nom, jours: jours, taches: concernees }
+  } catch (err) {
+    app.logger().error("Prévisions de gel indisponibles", "error", err)
+    return null
+  }
+}
+
+// Signal de vie Healthchecks.io après l'e-mail du matin (CDC 7).
+function signalDeVie(app, url) {
+  if (!url || url.indexOf("https://") !== 0) return
+  try {
+    $http.send({ url: url, method: "GET", timeout: 10 })
+  } catch (err) {
+    app.logger().error("Signal de vie Healthchecks.io impossible", "error", err)
+  }
+}
+
+// Construit l'e-mail. Rend { rien } s'il n'y a rien à envoyer (sauf lundi et essai).
 function composer(app, auj, lundi, essai) {
   const r = reglages(app)
   const taches = chargerTaches(app)
   const sel = E.courriel(taches, auj, lundi || essai, r.regles)
   const tb = E.tableau(taches, auj)
-  const rien = !sel.retard.length && !sel.aujourdhui.length && !sel.bientot.length
-  if (rien && !lundi && !essai) return { rien: true, reglages: r }
+  const nuit = controlesDe(app, auj)
+  const aRegarder = nuit.filter((c) => c.statut === "alerte" || c.statut === "attention")
+  const gel = gelAnnonce(app, r, taches, auj)
+  const rien = !sel.retard.length && !sel.aujourdhui.length && !sel.bientot.length && !aRegarder.length && nuit.length && !gel
+  if (rien && !lundi && !essai) return { rien: true, reglages: r, resume: resumeControles(nuit) }
 
   const c = tb.compteurs
   let objet = (c.retard ? "🔴 " + c.retard + " en retard" : "✅ rien en retard") + " · 🟠 " + c.semaine + " cette semaine"
+  if (aRegarder.length || !nuit.length) objet = "🛡️ contrôles : " + (nuit.length ? aRegarder.length + " à regarder" : "aucun compte rendu") + " · " + objet
+  if (gel && gel.jours) objet = "❄️ gel annoncé · " + objet
   if (lundi) objet = "Résumé du lundi · " + objet
   if (essai) objet = "[Essai] " + objet
 
   let html = "<div style=\"font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px;line-height:1.45;color:#1d221f;max-width:640px\">" +
     "<h1 style=\"font-size:20px;margin:0 0 4px\">Pilotage</h1>" +
     "<p style=\"margin:0;color:#5f665f\">" + echapper(E.format(auj)) + " · 🔴 " + c.retard + " en retard · 🟠 " + c.semaine + " cette semaine · ⚪ " + c.mois + " ce mois-ci</p>"
+  if (gel && gel.jours) {
+    html += "<h2 style=\"font-size:17px;margin:22px 0 4px\">❄️ Gel annoncé à " + echapper(gel.lieu) + "</h2><p style=\"margin:0\">" + echapper(gel.jours.join(" · ")) + "</p>" +
+      "<ul style=\"margin:6px 0 0;padding-left:18px\">" + gel.taches.map((t) => "<li><a href=\"" + echapper(r.site) + "/#/tache/" + echapper(t.id) + "\" style=\"color:#2f5d8a\">" + echapper(t.titre) + "</a></li>").join("") + "</ul>"
+  } else if (gel && gel.erreur) {
+    html += "<p style=\"margin-top:16px\">❄️ " + echapper(gel.erreur) + "</p>"
+  }
   html += section("En retard", sel.retard, auj, r.site)
   html += section("Aujourd'hui", sel.aujourdhui, auj, r.site)
   html += section("Bientôt", sel.bientot, auj, r.site)
   const texte = [objet, ""]
+  if (gel && gel.jours) {
+    texte.push("Gel annoncé à " + gel.lieu + " : " + gel.jours.join(", "))
+    gel.taches.forEach((t) => texte.push("- " + t.titre))
+    texte.push("")
+  } else if (gel && gel.erreur) {
+    texte.push(gel.erreur, "")
+  }
   ;[["En retard", sel.retard], ["Aujourd'hui", sel.aujourdhui], ["Bientôt", sel.bientot]].forEach((s) => {
     if (s[1].length) {
       texte.push(s[0])
@@ -201,6 +322,22 @@ function composer(app, auj, lundi, essai) {
         " une date</strong> (liste « À compléter » de l'accueil).</p>"
       texte.push(tb.a_completer.length + " tâche(s) attendent une date (liste « À compléter »).")
     }
+  }
+  // Contrôles de la nuit : une ligne si tout va bien, le détail sinon.
+  html += "<h2 style=\"font-size:17px;margin:22px 0 4px\">🛡️ Contrôles de la nuit</h2><p style=\"margin:0\">" + echapper(resumeControles(nuit)) + "</p>"
+  texte.push("Contrôles de la nuit : " + resumeControles(nuit))
+  aRegarder.forEach((x) => {
+    html += "<p style=\"margin:10px 0 0\"><strong>" + STATUT[x.statut] + " " + echapper(x.titre) + "</strong><br>" + texteHtml(x.texte) + "</p>"
+    texte.push("- " + STATUT[x.statut] + " " + x.titre + " : " + x.texte)
+  })
+  if (lundi || essai) {
+    // Résumé de la semaine : une ligne par nuit.
+    const lignes = []
+    for (let i = 1; i <= 7; i++) {
+      const n = E.ajouterJours(auj, -i)
+      lignes.push(E.format(n, true) + " : " + resumeControles(controlesDe(app, n)).replace("✅ ", ""))
+    }
+    html += "<p style=\"margin:10px 0 0;color:#5f665f;font-size:14px\">La semaine passée :<br>" + lignes.map(echapper).join("<br>") + "</p>"
   }
   html += "<p style=\"margin-top:26px;color:#5f665f;font-size:13px\">Un seul e-mail par jour au plus, à 7 h, et le résumé chaque lundi. " +
     "<a href=\"" + echapper(r.site) + "/#/accueil\" style=\"color:#2f5d8a\">Ouvrir le Pilotage</a></p></div>"
@@ -237,7 +374,8 @@ function envoyer(app, type) {
     return { ok: false, message: "Préparation de l'e-mail impossible." }
   }
   if (m.rien) {
-    journal(app, auj, "rien", "ok", "", "Rien à signaler ce matin : aucun e-mail envoyé.")
+    journal(app, auj, "rien", "ok", "", "Rien à signaler ce matin : aucun e-mail envoyé. " + m.resume)
+    signalDeVie(app, m.reglages.ping)
     return { ok: true, message: "Rien à signaler." }
   }
   if (!m.reglages.email) {
@@ -269,6 +407,7 @@ function envoyer(app, type) {
     })
   }
   journal(app, auj, typeJournal, "ok", m.objet, m.nb + " élément(s) cité(s).")
+  if (type !== "essai") signalDeVie(app, m.reglages.ping)
   return { ok: true, message: "E-mail envoyé : " + m.objet }
 }
 
@@ -283,7 +422,82 @@ function courrielDuMatin(app) {
   envoyer(app, "auto")
 }
 
+// ---------- réception des comptes rendus (script de la nuit) ----------
+
+function memesTextes(a, b) {
+  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length || !a.length) return false
+  let d = 0
+  for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return d === 0
+}
+
+// POST /api/pilotage/controles, depuis le serveur seulement (Caddy refuse
+// cette adresse depuis Internet) et avec le secret de /etc/pilotage/secret
+// (lisible par root et par le service du Pilotage). Le script ne peut
+// qu'écrire les comptes rendus de la nuit et créer une tâche de réparation.
+function recevoirControles(e) {
+  const app = e.app
+  let secret = ""
+  try {
+    secret = toString($os.readFile($os.getenv("PILOTAGE_SECRET_FICHIER") || "/etc/pilotage/secret")).trim()
+  } catch (err) {
+    app.logger().error("Secret des contrôles illisible", "error", err)
+  }
+  if (!secret || secret.length < 32 || !memesTextes(e.request.header.get("X-Pilotage-Secret"), secret)) {
+    throw new UnauthorizedError("Refusé.")
+  }
+  const corps = e.requestInfo().body || {}
+  const nuit = E.jour(String(corps.nuit || "")) || E.aujourdhui()
+  const liste = Array.isArray(corps.resultats) ? corps.resultats.slice(0, 100) : []
+  if (!liste.length) throw new BadRequestError("Aucun résultat.")
+
+  // Nouveau passage la même nuit : il remplace le précédent.
+  app.findRecordsByFilter("controles", "nuit = {:n}", "", 500, 0, { n: nuit }).forEach((c) => app.delete(c))
+  const col = app.findCollectionByNameOrId("controles")
+  let serveur = null
+  let nbTaches = 0
+  liste.forEach((x) => {
+    const statut = ["ok", "info", "attention", "alerte"].indexOf(x.statut) >= 0 ? x.statut : "attention"
+    const cle = String(x.cle || "inconnu").replace(/[^a-z0-9-]/gi, "").slice(0, 60) || "inconnu"
+    const titre = String(x.titre || cle).slice(0, 120)
+    const texte = String(x.texte || "").slice(0, 3000) || "Compte rendu vide."
+    const r = new Record(col)
+    r.set("nuit", nuit)
+    r.set("cle", cle)
+    r.set("titre", titre)
+    r.set("statut", statut)
+    r.set("texte", texte)
+    app.save(r)
+    if (statut !== "alerte") return
+    // Alerte : une tâche critique « Réparer : … », une seule tant qu'elle est ouverte.
+    const origine = "controle:" + cle
+    const ouvertes = app.findRecordsByFilter("taches", "origine = {:o} && etat != 'terminee'", "", 1, 0, { o: origine })
+    if (ouvertes.length) return
+    if (!serveur) {
+      try {
+        serveur = app.findFirstRecordByFilter("domaines", "nom = 'Serveur'")
+      } catch (err) {
+        serveur = app.findRecordsByFilter("domaines", "id != ''", "ordre", 1, 0)[0]
+      }
+    }
+    const t = new Record(app.findCollectionByNameOrId("taches"))
+    const valeurs = {
+      titre: "Réparer : " + titre, domaine: serveur.id, priorite: "critique", mode: "unique", souplesse: "imperative",
+      tolerance: 0, echeance: nuit + " 00:00:00.000Z", etat: "active", origine: origine,
+      notes: "Créée automatiquement par les contrôles de la nuit du " + E.format(nuit) + ".\n\n" + texte,
+    }
+    Object.keys(valeurs).forEach((k) => t.set(k, valeurs[k]))
+    app.save(t)
+    nbTaches++
+  })
+  // Comptes rendus gardés 90 jours.
+  const limite = E.ajouterJours(nuit, -90)
+  app.findRecordsByFilter("controles", "nuit < {:l}", "", 2000, 0, { l: limite }).forEach((c) => app.delete(c))
+  return { enregistres: liste.length, taches: nbTaches }
+}
+
 module.exports = {
+  recevoirControles: recevoirControles,
   avantHistorique: avantHistorique,
   apresHistorique: apresHistorique,
   envoyer: envoyer,

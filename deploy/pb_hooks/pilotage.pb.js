@@ -24,6 +24,14 @@ cronAdd("pilotage_courriel_matin", "*/15 5,6 * * *", () => {
   P.courrielDuMatin($app)
 })
 
+// Comptes rendus des contrôles de la nuit (script controles_nuit.py, root),
+// protégés par le secret de /etc/pilotage/secret ; refusés par Caddy depuis
+// Internet (CDC 5 et 8).
+routerAdd("POST", "/api/pilotage/controles", (e) => {
+  const P = require(`${__hooks}/pilotage.js`)
+  return e.json(200, P.recevoirControles(e))
+})
+
 routerAdd("POST", "/api/pilotage/essai-courriel", (e) => {
   const P = require(`${__hooks}/pilotage.js`)
   const r = P.envoyer(e.app, "essai")
