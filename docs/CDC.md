@@ -1,6 +1,6 @@
 # Cahier des charges — Pilotage (échéances et entretien, tous domaines)
 
-Version 0.16 — 29/10/2026 · Validée par le propriétaire ; étapes 1, 2 et 3 installées (application 1.3.0) ; procédures informatiques écrites, à charger
+Version 0.16 — 29/10/2026 · Validée par le propriétaire ; étapes 1, 2 et 3 installées (application 1.3.0) ; procédures informatiques chargées le 29/10/2026
 
 **Historique des versions**
 - Version 0.16 (29/10/2026) : **procédures informatiques écrites** (CDC 3.4), à la demande du propriétaire, chargées par la migration `1810700000_procedures_informatiques.js` dans les fiches qui n'ont encore aucune étape (une procédure déjà écrite n'est jamais touchée) : mises à jour du système (9 étapes), revue de sécurité trimestrielle (7), montée de version de PocketBase et de Caddy (12, avec retour en arrière), test de restauration d'une sauvegarde de site (8), test de restauration de la sauvegarde du PC (5), renouvellement des secrets (7), renouvellement du nom de domaine (5), ménage RGPD dans Gmail (5), vérification des liens de psv (4), tarifs de la saison (5 pour l'hiver, 5 pour l'été). Commandes alignées sur l'état réel du 29/10/2026 (serveur bmlab, 5 PocketBase, Caddy bloqué dans apt). Titres mis à jour : plus de jeton Infomaniak dans le renouvellement des secrets, jardin au lieu d'une « sandbox » inexistante dans la montée de version. Essayé sur la base locale (bon nombre d'étapes par fiche, migration rejouée sans doublon). Sécurité : aucun secret dans les procédures ; elles disent seulement où les trouver.
