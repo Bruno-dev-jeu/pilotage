@@ -4,7 +4,7 @@ Application web privée prévue sur `https://pilotage.bmlab.fr` : tout ce que le
 
 **Projet « chapeau », totalement séparé** des autres projets : site de l'appartement (`C:\Dev\site-accueil-appartement`, psv.bmlab.fr), jeu Immatriculation (`C:\Dev\immatriculation`), Courses (`C:\Dev\courses`). Son propre dépôt, sa propre PocketBase (service `pocketbase-pilotage`, port 8095, `/opt/pocketbase-pilotage`), son propre dossier web (`/var/www/pilotage-bmlab`), son propre bloc Caddy (`/etc/caddy/pilotage.caddy`). Il peut *lire* la documentation des autres projets pour en tirer les tâches, mais ne modifie jamais leurs fichiers ni leurs bases.
 
-`docs/CDC.md` est la **source de vérité vivante** (historique des versions en tête, chapitre 12 « État réel »). État au 29/10/2026 : version 0.13 ; **étapes 1 et 2 installées** (application 1.2.x, contrôles de la nuit à 5 h, Healthchecks.io et UptimeRobot en place) ; étape 3 (calendrier abonné iOS, rapport de sauvegarde du PC) à faire. Le tenir à jour dans le même travail que le code.
+`docs/CDC.md` est la **source de vérité vivante** (historique des versions en tête, chapitre 12 « État réel »). État au 29/10/2026 : version 0.14 ; étapes 1 et 2 installées ; étape 3 (agenda abonné, sauvegarde du PC lue chez Healthchecks.io, application 1.3.0) construite, à installer (`deploy/INSTALLATION.md`, « Étape 3 »). Le tenir à jour dans le même travail que le code.
 
 ## Structure
 - `public/` : l'application (HTML/CSS/JS sans framework ni build, servie telle quelle), comme Courses.

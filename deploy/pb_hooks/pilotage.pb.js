@@ -32,6 +32,18 @@ routerAdd("POST", "/api/pilotage/controles", (e) => {
   return e.json(200, P.recevoirControles(e))
 })
 
+// Calendrier abonné (iPhone, iPad) : adresse secrète, titre et date seulement.
+routerAdd("GET", "/api/pilotage/calendrier/{fichier}", (e) => {
+  const P = require(`${__hooks}/pilotage.js`)
+  return P.calendrier(e)
+})
+
+// Vérification immédiate de la sauvegarde du PC (depuis les réglages).
+routerAdd("POST", "/api/pilotage/verifier-pc", (e) => {
+  const P = require(`${__hooks}/pilotage.js`)
+  return e.json(200, P.verifierPC(e.app))
+}, $apis.requireAuth("users"))
+
 routerAdd("POST", "/api/pilotage/essai-courriel", (e) => {
   const P = require(`${__hooks}/pilotage.js`)
   const r = P.envoyer(e.app, "essai")

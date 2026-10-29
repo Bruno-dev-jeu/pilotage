@@ -203,3 +203,25 @@ Attendu : `envoyé : {'enregistres': …}` ; dans l'application, accueil : ligne
 - **Healthchecks.io** (compte existant) : créer deux contrôles, « Pilotage contrôles de la nuit » (période 1 jour, grâce 2 heures) et « Pilotage e-mail du matin » (période 1 jour, grâce 2 heures). Adresse du premier dans `/etc/pilotage/healthchecks-controles` (`echo 'https://hc-ping.com/…' | sudo tee /etc/pilotage/healthchecks-controles`) ; adresse du second dans l'application, Réglages > Surveillance et gel.
 - **UptimeRobot** (compte existant, déjà psv) : ajouter une sonde HTTPS par site manquant : pilotage, courses, jardin, immat, hameau-ecrins-405.
 - **Commune** pour l'alerte de gel : Réglages > Surveillance et gel.
+
+# Étape 3 : agenda abonné et sauvegarde du PC (CDC 3.5 et 5.1)
+
+## A. Fichiers (PC)
+
+```
+cd C:\Dev\pilotage; git pull; scp deploy\pb_migrations\1810600000_etape3.js deploy\pb_hooks\pilotage.pb.js deploy\pb_hooks\pilotage.js public\index.html public\api.js public\reglages.js bmlab:/tmp/
+```
+
+## B. Serveur
+
+```
+sudo mv /tmp/1810600000_etape3.js /opt/pocketbase-pilotage/pb_migrations/ && sudo mv /tmp/pilotage.pb.js /tmp/pilotage.js /opt/pocketbase-pilotage/pb_hooks/ && sudo chown -R pocketbase-pilotage:pocketbase-pilotage /opt/pocketbase-pilotage/pb_hooks /opt/pocketbase-pilotage/pb_migrations && sudo systemctl restart pocketbase-pilotage; sleep 3; systemctl is-active pocketbase-pilotage
+sudo mv /tmp/index.html /tmp/api.js /tmp/reglages.js /var/www/pilotage-bmlab/
+```
+
+Aucun changement de Caddy : `/api/pilotage/calendrier/…` passe déjà (sans le bon jeton : 404).
+
+## C. Réglages (application)
+
+- **Agenda** : Réglages > Agenda de l'iPhone et de l'iPad > « Créer l'adresse d'abonnement », puis sur chaque appareil « S'abonner dans l'agenda ».
+- **Sauvegarde du PC** : healthchecks.io > projet > Settings > API Access > « Create read-only API key » ; la coller dans Réglages > Surveillance et gel > « Clé d'API Healthchecks.io (lecture seule) », nom du contrôle `Sauvegarde PC`, Enregistrer, puis « Vérifier la sauvegarde du PC maintenant ».

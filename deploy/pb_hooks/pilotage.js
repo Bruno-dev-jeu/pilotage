@@ -132,12 +132,14 @@ function reglages(app) {
       return {
         id: r[0].id, email: r[0].getString("email_rappels"), site: r[0].getString("adresse_site") || "https://pilotage.bmlab.fr",
         regles: E.regles(regles), commune: r[0].getString("commune").trim(), meteo: meteo, ping: r[0].getString("ping_courriel"),
+        jeton: r[0].getString("jeton_calendrier"), hcCle: r[0].getString("healthchecks_api").trim(),
+        hcPc: r[0].getString("healthchecks_pc").trim() || "Sauvegarde PC",
       }
     }
   } catch (err) {
     // pas encore de réglages
   }
-  return { id: "", email: "", site: "https://pilotage.bmlab.fr", regles: E.regles(null), commune: "", meteo: null, ping: "" }
+  return { id: "", email: "", site: "https://pilotage.bmlab.fr", regles: E.regles(null), commune: "", meteo: null, ping: "", jeton: "", hcCle: "", hcPc: "Sauvegarde PC" }
 }
 
 function ligne(el, auj, site) {
@@ -411,6 +413,98 @@ function envoyer(app, type) {
   return { ok: true, message: "E-mail envoyé : " + m.objet }
 }
 
+
+// ---------- tâches de réparation créées par les contrôles ----------
+
+// Une tâche critique « Réparer : … » par contrôle en alerte, une seule tant
+// qu'elle est ouverte (champ origine). Rend vrai si elle a été créée.
+function tacheDeReparation(app, cle, titre, texte, nuit) {
+  const origine = "controle:" + cle
+  const ouvertes = app.findRecordsByFilter("taches", "origine = {:o} && etat != 'terminee'", "", 1, 0, { o: origine })
+  if (ouvertes.length) return false
+  let domaine
+  try {
+    domaine = app.findFirstRecordByFilter("domaines", cle === "sauvegarde-pc" ? "nom = 'PC et sauvegardes'" : "nom = 'Serveur'")
+  } catch (err) {
+    domaine = app.findRecordsByFilter("domaines", "id != ''", "ordre", 1, 0)[0]
+  }
+  const t = new Record(app.findCollectionByNameOrId("taches"))
+  const valeurs = {
+    titre: "Réparer : " + titre, domaine: domaine.id, priorite: "critique", mode: "unique", souplesse: "imperative",
+    tolerance: 0, echeance: nuit + " 00:00:00.000Z", etat: "active", origine: origine,
+    notes: "Créée automatiquement par les contrôles du " + E.format(nuit) + ".\n\n" + texte,
+  }
+  Object.keys(valeurs).forEach((k) => t.set(k, valeurs[k]))
+  app.save(t)
+  return true
+}
+
+function ecrireControle(app, nuit, cle, titre, statut, texte) {
+  app.findRecordsByFilter("controles", "nuit = {:n} && cle = {:c}", "", 10, 0, { n: nuit, c: cle }).forEach((c) => app.delete(c))
+  const r = new Record(app.findCollectionByNameOrId("controles"))
+  r.set("nuit", nuit)
+  r.set("cle", cle)
+  r.set("titre", titre)
+  r.set("statut", statut)
+  r.set("texte", texte)
+  app.save(r)
+}
+
+// ---------- sauvegarde du PC, lue chez Healthchecks.io (CDC 5.1, étape 3) ----------
+
+function heureParis(iso) {
+  const ms = Date.parse(iso)
+  if (isNaN(ms)) return ""
+  // Paris est décalé d'heures entières : les minutes sont celles de l'heure UTC.
+  const p = E.paris(ms)
+  const jour = p.date === E.aujourdhui() ? "aujourd'hui" : "le " + E.format(p.date, true)
+  return jour + " à " + p.heure + " h " + ("0" + new Date(ms).getUTCMinutes()).slice(-2)
+}
+
+// Lit le contrôle « Sauvegarde PC » (clé d'API en lecture seule) et écrit
+// un compte rendu dans les contrôles du jour. Rend { statut, texte }.
+function verifierPC(app) {
+  const r = reglages(app)
+  const nuit = E.aujourdhui()
+  const titre = "Sauvegarde du PC"
+  if (!r.hcCle) return { statut: "", texte: "Clé Healthchecks.io non réglée : rien à vérifier." }
+  let statut
+  let texte
+  try {
+    const res = $http.send({ url: "https://healthchecks.io/api/v3/checks/", method: "GET", headers: { "X-Api-Key": r.hcCle }, timeout: 15 })
+    if (res.statusCode === 401) throw new Error("clé refusée par Healthchecks.io")
+    if (res.statusCode !== 200) throw new Error("réponse " + res.statusCode)
+    const c = ((res.json && res.json.checks) || []).filter((x) => x.name === r.hcPc)[0]
+    if (!c) {
+      statut = "attention"
+      texte = "Contrôle « " + r.hcPc + " » introuvable chez Healthchecks.io : vérifiez son nom dans Réglages > Surveillance et gel."
+    } else {
+      const age = c.last_ping ? (Date.now() - Date.parse(c.last_ping)) / 3600000 : 9999
+      const quand = c.last_ping ? heureParis(c.last_ping) : "jamais"
+      if (c.status === "down") {
+        statut = "alerte"
+        texte = "La sauvegarde de la nuit n'a pas signalé de réussite (dernier signal : " + quand + "). Causes déjà vues : PC en veille ou capot fermé, disque D débranché, mauvais disque de la rotation. " +
+          "Le détail est dans l'e-mail de rapport du PC ; le rattrapage automatique repart au prochain branchement sur secteur. Une tâche de réparation a été créée."
+      } else if (c.status === "grace" || age > 30) {
+        statut = "attention"
+        texte = "La sauvegarde du PC est en retard (dernier signal : " + quand + "). Healthchecks.io vous écrira si elle ne se fait pas dans les prochaines heures."
+      } else if (c.status === "paused" || c.status === "new") {
+        statut = "info"
+        texte = "Le contrôle « " + r.hcPc + " » est en pause ou n'a jamais reçu de signal chez Healthchecks.io."
+      } else {
+        statut = "ok"
+        texte = "La sauvegarde de la nuit a signalé sa réussite " + quand + " (Healthchecks.io). Le détail est dans l'e-mail de rapport du PC. Rien à faire."
+      }
+    }
+  } catch (err) {
+    statut = "attention"
+    texte = "Lecture impossible chez Healthchecks.io (" + err + "). La sauvegarde du PC n'a pas pu être vérifiée ce matin."
+  }
+  ecrireControle(app, nuit, "sauvegarde-pc", titre, statut, texte)
+  if (statut === "alerte") tacheDeReparation(app, "sauvegarde-pc", titre, texte, nuit)
+  return { statut: statut, texte: texte }
+}
+
 // Passage du cron : à 7 h ou 8 h à Paris, une fois par jour.
 function courrielDuMatin(app) {
   const p = E.paris(Date.now())
@@ -419,10 +513,15 @@ function courrielDuMatin(app) {
   if (deja.length) return
   const echecs = app.findRecordsByFilter("envois", "jour = {:j} && statut = 'echec'", "", 10, 0, { j: p.date })
   if (echecs.length >= 6) return
+  try {
+    verifierPC(app)
+  } catch (err) {
+    app.logger().error("Vérification de la sauvegarde du PC impossible", "error", err)
+  }
   envoyer(app, "auto")
 }
 
-// ---------- réception des comptes rendus (script de la nuit) ----------
+// ---------- calendrier abonné (CDC 3.5, étape 3) ----------
 
 function memesTextes(a, b) {
   if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length || !a.length) return false
@@ -430,6 +529,87 @@ function memesTextes(a, b) {
   for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i)
   return d === 0
 }
+
+function texteIcs(t) {
+  return String(t || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n")
+}
+
+// Lignes de 75 octets au plus (norme iCalendar), coupées sans casser un caractère.
+function plier(ligne) {
+  const res = []
+  let cour = ""
+  let octets = 0
+  for (const ch of ligne) {
+    const n = unescape(encodeURIComponent(ch)).length
+    if (octets + n > (res.length ? 74 : 75)) {
+      res.push(cour)
+      cour = ""
+      octets = 0
+    }
+    cour += ch
+    octets += n
+  }
+  res.push(cour)
+  return res.join("\r\n ")
+}
+
+// GET /api/pilotage/calendrier/{jeton}.ics : tâches des 12 prochains mois et
+// retards, titre et date seulement (jamais la procédure, les notes ni les
+// justificatifs). Sans le bon jeton : 404.
+function calendrier(e) {
+  const app = e.app
+  const fichier = String(e.request.pathValue("fichier") || "")
+  const jeton = fichier.replace(/\.ics$/, "")
+  const r = reglages(app)
+  if (!r.jeton || r.jeton.length < 32 || !memesTextes(jeton, r.jeton)) throw new NotFoundError("Introuvable.")
+  const auj = E.aujourdhui()
+  const fin = E.ajouterJours(auj, 366)
+  const taches = chargerTaches(app)
+  const evenements = []
+  const maintenant = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z")
+  function ajouter(t, date, type, resume) {
+    const d = date.replace(/-/g, "")
+    evenements.push([
+      "BEGIN:VEVENT",
+      "UID:" + t.id + "-" + d + "-" + type + "@pilotage.bmlab.fr",
+      "DTSTAMP:" + maintenant,
+      "DTSTART;VALUE=DATE:" + d,
+      "DTEND;VALUE=DATE:" + E.ajouterJours(date, 1).replace(/-/g, ""),
+      "SUMMARY:" + texteIcs(resume),
+      "URL:" + r.site + "/#/tache/" + t.id,
+      "DESCRIPTION:" + texteIcs("Ouvrir la fiche dans le Pilotage : " + r.site + "/#/tache/" + t.id),
+      "TRANSP:TRANSPARENT",
+      "END:VEVENT",
+    ].map(plier).join("\r\n"))
+  }
+  taches.forEach((t) => {
+    if (t.mode === "reference") return
+    const p = PASTILLE[t.priorite] || ""
+    const tol = E.tolerance(t)
+    // Retards : affichés aujourd'hui, pour ne pas les perdre de vue.
+    E.elements(t, auj).forEach((el) => {
+      if (E.classer(el, auj) === "retard") {
+        const quoi = el.type === "preparation" ? "📞 " + t.preparation + " (" + t.titre + ")" : el.type === "attente" ? "⏳ Relancer : " + t.titre : t.titre
+        ajouter(t, auj, "retard-" + el.type, "⚠️ En retard : " + p + " " + quoi)
+      }
+    })
+    E.occurrences(t, auj, fin).forEach((o) => {
+      if (o.type === "preparation") ajouter(t, o.date, o.type, p + " 📞 " + t.preparation + " (" + t.titre + ")")
+      else if (o.type === "attente") ajouter(t, o.date, o.type, p + " ⏳ Relancer : " + t.titre)
+      else ajouter(t, o.date, o.type, p + " " + t.titre + (t.souplesse === "imperative" ? " 🔒" : tol ? " (± " + tol + " j)" : ""))
+    })
+  })
+  const corps = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//bmlab//Pilotage//FR", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+    "X-WR-CALNAME:Pilotage", "X-WR-TIMEZONE:Europe/Paris", "REFRESH-INTERVAL;VALUE=DURATION:PT4H", "X-PUBLISHED-TTL:PT4H",
+  ].join("\r\n") + "\r\n" + evenements.join("\r\n") + (evenements.length ? "\r\n" : "") + "END:VCALENDAR\r\n"
+  e.response.header().set("Content-Type", "text/calendar; charset=utf-8")
+  e.response.header().set("Cache-Control", "no-store")
+  e.response.header().set("Content-Disposition", "inline; filename=\"pilotage.ics\"")
+  return e.string(200, corps)
+}
+
+// ---------- réception des comptes rendus (script de la nuit) ----------
 
 // POST /api/pilotage/controles, depuis le serveur seulement (Caddy refuse
 // cette adresse depuis Internet) et avec le secret de /etc/pilotage/secret
@@ -451,44 +631,18 @@ function recevoirControles(e) {
   const liste = Array.isArray(corps.resultats) ? corps.resultats.slice(0, 100) : []
   if (!liste.length) throw new BadRequestError("Aucun résultat.")
 
-  // Nouveau passage la même nuit : il remplace le précédent.
-  app.findRecordsByFilter("controles", "nuit = {:n}", "", 500, 0, { n: nuit }).forEach((c) => app.delete(c))
-  const col = app.findCollectionByNameOrId("controles")
-  let serveur = null
+  // Nouveau passage la même nuit : il remplace le précédent (sauf le compte
+  // rendu de la sauvegarde du PC, écrit par le Pilotage lui-même le matin).
+  app.findRecordsByFilter("controles", "nuit = {:n} && cle != 'sauvegarde-pc'", "", 500, 0, { n: nuit }).forEach((c) => app.delete(c))
   let nbTaches = 0
   liste.forEach((x) => {
     const statut = ["ok", "info", "attention", "alerte"].indexOf(x.statut) >= 0 ? x.statut : "attention"
     const cle = String(x.cle || "inconnu").replace(/[^a-z0-9-]/gi, "").slice(0, 60) || "inconnu"
+    if (cle === "sauvegarde-pc") return
     const titre = String(x.titre || cle).slice(0, 120)
     const texte = String(x.texte || "").slice(0, 3000) || "Compte rendu vide."
-    const r = new Record(col)
-    r.set("nuit", nuit)
-    r.set("cle", cle)
-    r.set("titre", titre)
-    r.set("statut", statut)
-    r.set("texte", texte)
-    app.save(r)
-    if (statut !== "alerte") return
-    // Alerte : une tâche critique « Réparer : … », une seule tant qu'elle est ouverte.
-    const origine = "controle:" + cle
-    const ouvertes = app.findRecordsByFilter("taches", "origine = {:o} && etat != 'terminee'", "", 1, 0, { o: origine })
-    if (ouvertes.length) return
-    if (!serveur) {
-      try {
-        serveur = app.findFirstRecordByFilter("domaines", "nom = 'Serveur'")
-      } catch (err) {
-        serveur = app.findRecordsByFilter("domaines", "id != ''", "ordre", 1, 0)[0]
-      }
-    }
-    const t = new Record(app.findCollectionByNameOrId("taches"))
-    const valeurs = {
-      titre: "Réparer : " + titre, domaine: serveur.id, priorite: "critique", mode: "unique", souplesse: "imperative",
-      tolerance: 0, echeance: nuit + " 00:00:00.000Z", etat: "active", origine: origine,
-      notes: "Créée automatiquement par les contrôles de la nuit du " + E.format(nuit) + ".\n\n" + texte,
-    }
-    Object.keys(valeurs).forEach((k) => t.set(k, valeurs[k]))
-    app.save(t)
-    nbTaches++
+    ecrireControle(app, nuit, cle, titre, statut, texte)
+    if (statut === "alerte" && tacheDeReparation(app, cle, titre, texte, nuit)) nbTaches++
   })
   // Comptes rendus gardés 90 jours.
   const limite = E.ajouterJours(nuit, -90)
@@ -498,6 +652,8 @@ function recevoirControles(e) {
 
 module.exports = {
   recevoirControles: recevoirControles,
+  verifierPC: verifierPC,
+  calendrier: calendrier,
   avantHistorique: avantHistorique,
   apresHistorique: apresHistorique,
   envoyer: envoyer,

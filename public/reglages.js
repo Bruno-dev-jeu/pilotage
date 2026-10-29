@@ -6,7 +6,7 @@
 
   var E = window.Echeances;
   var el = O.el;
-  var VERSION_APPLI = "1.2.1";
+  var VERSION_APPLI = "1.3.0";
 
   function vue(zone) {
     O.titre("Réglages");
@@ -22,6 +22,7 @@
       courriels(contenu, r[0].items[0] || null, r[1].items);
       regles(contenu);
       surveillance(contenu);
+      agenda(contenu);
       domaines(contenu, r[3]);
       compte(contenu);
     }, function (e) {
@@ -103,6 +104,8 @@
       section.removeChild(section.lastChild);
       var commune = el("input", { type: "text", maxlength: "100", valeur: r ? r.commune : "", placeholder: "Ex. Rognac 13340" });
       var ping = el("input", { type: "url", valeur: r ? r.ping_courriel : "", placeholder: "https://hc-ping.com/…", autocapitalize: "off", spellcheck: "false" });
+      var hcCle = el("input", { type: "password", valeur: r ? r.healthchecks_api : "", autocomplete: "off", autocapitalize: "off", spellcheck: "false", placeholder: "Clé en lecture seule" });
+      var hcPc = el("input", { type: "text", maxlength: "100", valeur: (r && r.healthchecks_pc) || "Sauvegarde PC" });
       var etat = el("p", { classe: "discret", "aria-live": "polite" });
       var lieu = r && r.meteo && r.meteo.nom && r.meteo.commune === r.commune ? "Commune trouvée : " + r.meteo.nom + "." : "";
       var enregistrer = el("button", { type: "button", classe: "bouton", texte: "Enregistrer" });
@@ -114,7 +117,7 @@
         }
         enregistrer.disabled = true;
         O.reglage(true).then(function (x) {
-          var d = { commune: commune.value.trim().replace(/\s+/g, " "), ping_courriel: p };
+          var d = { commune: commune.value.trim().replace(/\s+/g, " "), ping_courriel: p, healthchecks_api: hcCle.value.trim(), healthchecks_pc: hcPc.value.trim() };
           if (!x) d.adresse_site = window.location.origin;
           return x ? Api.modifier("reglages", x.id, d) : Api.creer("reglages", d);
         }).then(function () {
@@ -130,12 +133,92 @@
         el("p", { classe: "aide", texte: "Les contrôles de la nuit (5 h) écrivent leurs comptes rendus dans l'écran « Contrôles », lien en haut de l'accueil." }),
         O.champ("Commune de la maison, pour l'alerte de gel", commune, "Nom et code postal, jamais l'adresse. Prévisions Open-Meteo, sans compte. " + lieu),
         O.champ("Signal de vie de l'e-mail du matin (Healthchecks.io)", ping, "Adresse « ping URL » du contrôle Healthchecks.io : si l'e-mail du matin ne part pas, Healthchecks.io vous prévient."),
+        el("h3", { texte: "Sauvegarde du PC" }),
+        el("p", { classe: "aide", texte: "Chaque matin, le Pilotage lit chez Healthchecks.io le signal envoyé dans la nuit par la sauvegarde du PC, et l'ajoute aux contrôles. Il faut une clé d'API en LECTURE SEULE : healthchecks.io › votre projet › Settings › API Access › « Create read-only API key »." }),
+        O.champ("Clé d'API Healthchecks.io (lecture seule)", hcCle),
+        O.champ("Nom du contrôle de la sauvegarde du PC", hcPc),
         enregistrer,
+        el("button", { type: "button", classe: "bouton secondaire", texte: "💾 Vérifier la sauvegarde du PC maintenant", onclick: function () {
+          etat.textContent = "Lecture chez Healthchecks.io…";
+          Api.verifierPC().then(function (x) {
+            var icone = { ok: "✅", info: "ℹ️", attention: "🟠", alerte: "🔴" }[x.statut] || "";
+            etat.textContent = (icone ? icone + " " : "") + x.texte;
+          }, function (e) {
+            etat.textContent = "⚠️ " + e.message;
+          });
+        } }),
         el("a", { classe: "bouton secondaire", href: "#/controles", texte: "🛡️ Voir les contrôles de la nuit" }),
         etat,
       ].forEach(function (n) { section.appendChild(n); });
     }, function (e) {
       section.removeChild(section.lastChild);
+      section.appendChild(O.erreur(e));
+    });
+  }
+
+  // ---------- agenda de l'iPhone et de l'iPad (CDC 3.5) ----------
+
+  function nouveauJeton() {
+    var t = new Uint8Array(24);
+    window.crypto.getRandomValues(t);
+    return Array.prototype.map.call(t, function (o) { return (o < 16 ? "0" : "") + o.toString(16); }).join("");
+  }
+
+  function agenda(zone) {
+    var section = el("section", { classe: "carte" }, [el("h2", { texte: "📅 Agenda de l'iPhone et de l'iPad" }), O.attente()]);
+    zone.appendChild(section);
+    O.reglage(true).then(function (r) {
+      O.vider(section);
+      section.appendChild(el("h2", { texte: "📅 Agenda de l'iPhone et de l'iPad" }));
+      var etat = el("p", { classe: "discret", "aria-live": "polite" });
+      function enregistrerJeton(j) {
+        return O.reglage(true).then(function (x) {
+          var d = { jeton_calendrier: j };
+          if (!x) d.adresse_site = window.location.origin;
+          return x ? Api.modifier("reglages", x.id, d) : Api.creer("reglages", d);
+        }).then(function () {
+          O.oublierTout();
+          section.parentNode.replaceChild(el("div"), section);
+          window.dispatchEvent(new HashChangeEvent("hashchange"));
+        });
+      }
+      var jeton = r && r.jeton_calendrier;
+      if (!jeton) {
+        section.appendChild(el("p", { classe: "aide", texte: "Vos tâches peuvent apparaître dans l'app Calendrier de l'iPhone et de l'iPad, et s'y mettre à jour toutes seules. On crée d'abord une adresse secrète, que seul votre appareil connaîtra." }));
+        section.appendChild(el("button", { type: "button", classe: "bouton", texte: "Créer l'adresse d'abonnement", onclick: function () {
+          enregistrerJeton(nouveauJeton()).catch(function (e) { etat.textContent = "Impossible : " + e.message; });
+        } }));
+        section.appendChild(etat);
+        return;
+      }
+      var chemin = window.location.host + "/api/pilotage/calendrier/" + jeton + ".ics";
+      section.appendChild(el("ol", { classe: "aide etapes-agenda" }, [
+        el("li", { texte: "Sur l'iPhone (puis sur l'iPad), touchez « S'abonner dans l'agenda » ci-dessous." }),
+        el("li", { texte: "iOS propose « S'abonner au calendrier « Pilotage » » : touchez S'abonner, puis OK." }),
+        el("li", { texte: "Les tâches apparaissent dans l'app Calendrier, sous le nom « Pilotage », et se mettent à jour toutes seules (quelques fois par jour). On coche « Fait » dans le Pilotage, pas dans le Calendrier." }),
+      ]));
+      section.appendChild(el("a", { classe: "bouton", href: "webcal://" + chemin, texte: "📅 S'abonner dans l'agenda" }));
+      section.appendChild(el("button", { type: "button", classe: "bouton secondaire", texte: "Copier l'adresse (autre agenda)", onclick: function () {
+        var adresse = "https://" + chemin;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(adresse).then(function () { etat.textContent = "Adresse copiée ✓ Ne la communiquez à personne."; }, function () { etat.textContent = adresse; });
+        } else {
+          etat.textContent = adresse;
+        }
+      } }));
+      section.appendChild(el("p", { classe: "aide", texte: "L'agenda ne montre que le titre et la date de chaque tâche, jamais la procédure ni les justificatifs. Les rappels restent ceux de l'e-mail du matin ; pour une alerte sur le téléphone, réglez-la dans Réglages iOS › Calendrier." }));
+      section.appendChild(el("button", { type: "button", classe: "bouton danger", texte: "Changer l'adresse (coupe les abonnements actuels)", onclick: function () {
+        Dialogue.confirmer({
+          titre: "Changer l'adresse de l'agenda ?",
+          texte: "Les appareils déjà abonnés ne recevront plus rien : il faudra vous réabonner sur chacun. À faire si vous pensez que l'adresse a été vue par quelqu'un d'autre.",
+          ok: "Changer l'adresse", annuler: "Garder", danger: true,
+        }).then(function (oui) {
+          if (oui) enregistrerJeton(nouveauJeton()).catch(function (e) { etat.textContent = "Impossible : " + e.message; });
+        });
+      } }));
+      section.appendChild(etat);
+    }, function (e) {
+      O.vider(section);
       section.appendChild(O.erreur(e));
     });
   }

@@ -256,6 +256,9 @@
     essaiCourriel: function () {
       return appel("POST", "/api/pilotage/essai-courriel");
     },
+    verifierPC: function () {
+      return appel("POST", "/api/pilotage/verifier-pc");
+    },
     texteFiltre: texteFiltre,
   };
 
