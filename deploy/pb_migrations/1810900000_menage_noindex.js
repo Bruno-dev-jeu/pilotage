@@ -5,7 +5,16 @@
 // supprimer une fois les sites vérifiés pendant quelques jours (demande du
 // propriétaire, 30/10/2026). Tâche ponctuelle, avec sa procédure. Créée une
 // seule fois.
+// Même migration : correction de l'heure de la sauvegarde du PC dans la
+// procédure « Échanger le disque de sauvegarde du PC » (0 h 30 écrit, tâche
+// Windows « Sauvegarde nuit » réglée sur 0 h 45), seulement si l'étape n'a
+// pas déjà été modifiée dans l'application.
 migrate((app) => {
+  app.findRecordsByFilter("etapes", "texte ~ {:a}", "", 0, 0, { a: "(elle tourne à 0 h 30)" }).forEach((e) => {
+    e.set("texte", e.getString("texte").replace("(elle tourne à 0 h 30)", "(elle tourne à 0 h 45)"))
+    app.save(e)
+  })
+
   const TITRE = "Supprimer la copie de secours /etc/caddy/Caddyfile.avant-noindex"
   if (app.findRecordsByFilter("taches", "titre = {:t}", "", 1, 0, { t: TITRE }).length) return
   let domaine

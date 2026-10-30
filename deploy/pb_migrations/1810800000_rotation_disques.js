@@ -30,7 +30,7 @@ migrate((app) => {
 
   const ETAPES = [
     ["Le dernier jour du mois, on branche le disque du mois qui commence : SAV_PC_MOIS_IMPAIRS (Seagate) pour janvier, mars, mai, juillet, septembre, novembre ; SAV_PC_MOIS_PAIRS (Sabrent SSD) pour février, avril, juin, août, octobre, décembre. Ce jour-là, l'e-mail de sauvegarde du PC affiche un bandeau jaune.", ""],
-    ["Faites l'échange en journée, après la sauvegarde de la nuit (elle tourne à 0 h 30). Débranchez proprement le disque actuel : icône « Retirer le périphérique en toute sécurité » dans la barre des tâches, puis attendez le message de Windows.", ""],
+    ["Faites l'échange en journée, après la sauvegarde de la nuit (elle tourne à 0 h 45). Débranchez proprement le disque actuel : icône « Retirer le périphérique en toute sécurité » dans la barre des tâches, puis attendez le message de Windows.", ""],
     ["Seulement si Windows dit que le disque est « utilisé » : clic droit sur Démarrer › Terminal (administrateur), puis tapez cette commande, et débranchez ensuite.", "Stop-Service VeeamEndpointBackupSvc; fsutil volume dismount D:"],
     ["Branchez l'autre disque au même endroit (PC ou dock). Dans l'Explorateur, vérifiez qu'il apparaît en D: avec le bon nom (SAV_PC_MOIS_PAIRS ou SAV_PC_MOIS_IMPAIRS).", ""],
     ["Seulement si vous avez arrêté Veeam à l'étape 3 : relancez-le, dans le même Terminal administrateur.", "Start-Service VeeamEndpointBackupSvc"],
