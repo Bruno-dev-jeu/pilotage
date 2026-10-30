@@ -226,7 +226,7 @@
   function dessinerProcedure(zone, t, etapes, recharger) {
     zone.appendChild(el("h2", { texte: t.titre }));
     zone.appendChild(el("p", { classe: "rappel-secret", texte: RAPPEL_SECRET }));
-    zone.appendChild(el("p", { classe: "aide", texte: "Chaque champ est enregistré dès que vous le quittez. Photos réduites automatiquement ; vidéo de 2 minutes environ (250 Mo au plus), sinon un lien." }));
+    zone.appendChild(el("p", { classe: "aide", texte: "Chaque champ est enregistré dès que vous le quittez. Photos réduites automatiquement ; vidéo d'une minute environ (100 Mo au plus), sinon un lien." }));
     etapes.forEach(function (x, i) {
       zone.appendChild(carteEtape(t, x, i, etapes, recharger));
     });
@@ -304,8 +304,8 @@
       var v = video.files && video.files[0];
       video.value = "";
       if (!v) return;
-      if (v.size > 262144000) {
-        return Dialogue.informer({ titre: "Vidéo trop longue", texte: "Cette vidéo fait " + O.taille(v.size) + " : 250 Mo au plus. Filmez plus court, ou déposez-la sur YouTube (non répertoriée) ou Google Drive et collez le lien." });
+      if (v.size > 104857600) {
+        return Dialogue.informer({ titre: "Vidéo trop longue", texte: "Cette vidéo fait " + O.taille(v.size) + " : 100 Mo au plus (chaque Mo compte aussi dans les sauvegardes du serveur). Filmez plus court, ou déposez-la sur YouTube (non répertoriée) ou Google Drive et collez le lien." });
       }
       var f = new FormData();
       f.append("video", v, v.name || O.nomFichier("video", "mov"));

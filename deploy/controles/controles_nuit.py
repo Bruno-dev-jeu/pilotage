@@ -73,6 +73,7 @@ JOURNAL = "/var/log/pilotage-controles.log"
 MEDIAS_PILOTAGE = "/opt/pocketbase-pilotage/pb_data/storage"
 
 resultats = []
+ESSAI = False  # mode essai : rien n'est envoyé ni retenu pour la nuit suivante
 
 
 def ajouter(cle, titre, statut, texte):
@@ -109,7 +110,7 @@ def commande(args, delai=60):
 
 NOMS = {
     "sites_en_ligne": "Sites en ligne", "certificats": "Certificats HTTPS", "disque": "Espace disque",
-    "medias_pilotage": "Photos et vidéos du Pilotage", "mises_a_jour": "Mises à jour", "redemarrage": "Redémarrage",
+    "medias_pilotage": "Photos et vidéos du Pilotage", "memoire": "Mémoire du serveur", "mises_a_jour": "Mises à jour", "redemarrage": "Redémarrage",
     "services": "Services du serveur", "versions": "Versions de Caddy et PocketBase", "menage": "Ménage de la nuit",
 }
 
@@ -215,15 +216,80 @@ def immatriculation():
             "Pas de sauvegarde du serveur pour ce jeu (seuls les réglages des joueurs y sont) : décision en attente, voir la tâche « Décider du sort d'Immatriculation côté sauvegarde ».")
 
 
+def taille_dossier(chemin):
+    total = 0
+    for racine, _, fichiers in os.walk(chemin):
+        for f in fichiers:
+            try:
+                total += os.path.getsize(os.path.join(racine, f))
+            except OSError:
+                pass
+    return total
+
+
+# Seuils de l'espace disque (validés le 30/10/2026, CDC 0.22) : le disque du
+# serveur ne fait que 15 Go, un pourcentage ne parle pas assez.
+DISQUE_ALERTE = 3e9       # 🔴 sous 3 Go libres
+DISQUE_ATTENTION = 5e9    # 🟠 sous 5 Go libres
+DISQUE_BAISSE = 1e9       # 🔴 si l'espace libre baisse de plus de 1 Go en un jour
+
+
 def disque():
     u = shutil.disk_usage("/")
-    libre = u.free / u.total * 100
-    texte = "%s libres sur %s (%d %%)." % (taille(u.free), taille(u.total), libre)
-    if libre < 20:
+    etat = lire_etat()
+    avant = etat.get("disque", {})
+    projets = {}
+    for d in sorted(glob.glob("/opt/pocketbase-*")):
+        if os.path.isdir(os.path.join(d, "pb_data")):
+            projets[os.path.basename(d).replace("pocketbase-", "", 1)] = taille_dossier(os.path.join(d, "pb_data"))
+
+    def evolution(nom, o):
+        a = avant.get("projets", {}).get(nom)
+        if a is None or abs(o - a) < 1e6:
+            return ""
+        return " (%s%s depuis la nuit dernière)" % ("+" if o > a else "−", taille(abs(o - a)))
+
+    detail = " ; ".join("%s : %s%s" % (nom, taille(o), evolution(nom, o)) for nom, o in sorted(projets.items(), key=lambda x: -x[1]))
+    texte = "%s libres sur %s (%d %%). Place prise par projet (données, fichiers et sauvegardes gardées sur le serveur) : %s." % (
+        taille(u.free), taille(u.total), u.free / u.total * 100, detail or "aucun projet trouvé")
+    baisse = avant.get("libre", u.free) - u.free
+    if u.free < DISQUE_ALERTE:
         ajouter("disque", "Espace disque du serveur", "alerte",
-                texte + " Moins de 20 % : les sauvegardes risquent de manquer de place. Une tâche de réparation a été créée.")
+                texte + "\nMoins de 3 Go libres : si le disque se remplit, aucun site ne peut plus rien enregistrer et les sauvegardes échouent. "
+                "À faire : supprimer le superflu, réduire le nombre de sauvegardes gardées, ou agrandir le disque. Une tâche de réparation a été créée.")
+    elif baisse > DISQUE_BAISSE:
+        ajouter("disque", "Espace disque du serveur", "alerte",
+                texte + "\nL'espace libre a baissé de %s en un jour : envoi massif de fichiers, journal qui s'emballe ou sauvegarde anormale. "
+                "Regarder quel projet a grossi (détail ci-dessus). Une tâche de réparation a été créée." % taille(baisse))
+    elif u.free < DISQUE_ATTENTION:
+        ajouter("disque", "Espace disque du serveur", "attention",
+                texte + "\nMoins de 5 Go libres : la marge diminue. Penser à faire de la place ou à agrandir le disque (tâche « Agrandir le disque du serveur »).")
     else:
         ajouter("disque", "Espace disque du serveur", "ok", texte + " Rien à faire.")
+    if not ESSAI:
+        etat["disque"] = {"libre": u.free, "projets": projets}
+        ecrire_etat(etat)
+
+
+def memoire():
+    infos = {}
+    with open("/proc/meminfo", encoding="utf-8") as f:
+        for ligne in f:
+            morceaux = ligne.split()
+            if len(morceaux) >= 2:
+                infos[morceaux[0].rstrip(":")] = int(morceaux[1]) * 1024
+    total, dispo = infos.get("MemTotal", 0), infos.get("MemAvailable", 0)
+    swap_total, swap_libre = infos.get("SwapTotal", 0), infos.get("SwapFree", 0)
+    swap_pris = swap_total - swap_libre
+    texte = "%s disponibles sur %s ; réserve sur disque (swap) utilisée : %s sur %s." % (taille(dispo), taille(total), taille(swap_pris), taille(swap_total))
+    if dispo < 150 * 1024 * 1024:
+        ajouter("memoire", "Mémoire du serveur", "attention",
+                texte + " Moins de 150 Mo disponibles : le serveur est à l'étroit, les sites peuvent ralentir. À regarder avec Claude (quel service consomme le plus).")
+    elif swap_total and swap_pris > swap_total / 2:
+        ajouter("memoire", "Mémoire du serveur", "attention",
+                texte + " La réserve sur disque est plus qu'à moitié utilisée : la mémoire manque régulièrement. À regarder avec Claude.")
+    else:
+        ajouter("memoire", "Mémoire du serveur", "ok", texte + " Rien à faire.")
 
 
 def medias_pilotage():
@@ -464,10 +530,11 @@ def signal_de_vie(echec):
 
 
 def main():
-    essai = "--essai" in sys.argv
+    global ESSAI
+    essai = ESSAI = "--essai" in sys.argv
     nuit = maintenant().strftime("%Y-%m-%d")
     for c in [sites_en_ligne, certificats] + [sauvegarde(*s) for s in SAUVEGARDES] + [robot(*r) for r in ROBOTS] + [
-            immatriculation, disque, medias_pilotage, mises_a_jour, redemarrage, services, versions]:
+            immatriculation, disque, memoire, medias_pilotage, mises_a_jour, redemarrage, services, versions]:
         controle(c)
     if not essai:
         controle(menage)

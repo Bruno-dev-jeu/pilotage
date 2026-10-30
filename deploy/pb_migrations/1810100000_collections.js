@@ -176,9 +176,9 @@ migrate((app) => {
       help: "Photos de l'étape, réduites par l'application à environ 300 Ko chacune. 20 au plus.",
     }),
     new FileField({
-      name: "video", required: false, maxSelect: 1, maxSize: 262144000, protected: true,
+      name: "video", required: false, maxSelect: 1, maxSize: 104857600, protected: true,
       mimeTypes: ["video/mp4", "video/quicktime", "video/webm", "video/x-m4v"],
-      help: "Vidéo courte filmée au téléphone (2 minutes environ, 250 Mo au plus). Plus longue : utiliser le lien.",
+      help: "Vidéo courte filmée au téléphone (1 minute environ, 100 Mo au plus : chaque Mo compte aussi dans les sauvegardes du serveur). Plus longue : utiliser le lien.",
     }),
     new URLField({
       name: "lien", required: false,
