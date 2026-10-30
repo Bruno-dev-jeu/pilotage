@@ -1,2 +1,11 @@
+# Site privé : interdit à l'indexation par les moteurs de recherche.
+# Toutes les réponses du serveur portent « X-Robots-Tag: noindex, nofollow, noarchive ».
+# Google et Bing peuvent lire les pages pour constater ce refus (sans cela, ils
+# pourraient garder l'adresse seule, trouvée par un lien) ; tous les autres
+# robots, dont ceux des intelligences artificielles, sont refusés.
+User-agent: Googlebot
+User-agent: Bingbot
+Allow: /
+
 User-agent: *
 Disallow: /

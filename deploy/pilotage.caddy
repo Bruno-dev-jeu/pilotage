@@ -18,6 +18,8 @@ pilotage.bmlab.fr {
         Permissions-Policy "camera=(self), microphone=(self), geolocation=()"
         Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; script-src 'self'; style-src 'self'; connect-src 'self'; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
         -Server
+        # Site privé, jamais indexé (30/10/2026) : refus imposé à toutes les réponses (pages, PDF, photos, API). Seule la vitrine reste ouverte aux moteurs.
+        X-Robots-Tag "noindex, nofollow, noarchive"
     }
 
     @pages path / *.html *.js *.css *.webmanifest
